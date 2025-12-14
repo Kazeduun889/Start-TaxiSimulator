@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi Pro 0.7</title>
+    <title>Taxi Pro 0.8</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -11,12 +11,9 @@
             --card-bg: #FFFFFF;
             --text-main: #111827;
             --text-sec: #6B7280;
-            --accent: #FBBF24; /* Taxi Gold */
-            --accent-blue: #3B82F6; /* XP Blue */
-            --danger: #EF4444;
-            --success: #10B981;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --accent: #FBBF24;
+            --accent-blue: #3B82F6;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         body {
@@ -45,7 +42,6 @@
             z-index: 10;
         }
 
-        /* Карточки ресурсов */
         .res-pill {
             display: flex;
             align-items: center;
@@ -59,7 +55,6 @@
             border: 1px solid #E5E7EB;
         }
 
-        /* --- XP LEVEL SYSTEM (Центральная красота) --- */
         .level-container {
             display: flex;
             flex-direction: column;
@@ -80,23 +75,15 @@
             background: #E5E7EB;
             border-radius: 3px;
             overflow: hidden;
-            position: relative;
         }
         .xp-fill {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, #3B82F6, #60A5FA);
-            border-radius: 3px;
             transition: width 0.3s ease;
         }
-        .level-num {
-            position: absolute;
-            top: 15px;
-            font-size: 10px;
-            color: #9CA3AF;
-        }
 
-        /* --- GAME AREA --- */
+        /* --- STAGE --- */
         .stage {
             flex: 1;
             display: flex;
@@ -106,46 +93,45 @@
             position: relative;
         }
 
+        .client-info {
+            position: absolute;
+            top: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+        }
+        .client-info.visible { opacity: 1; transform: translateY(0); }
+
         .car-area {
             position: relative;
-            margin-bottom: 20px;
-            transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        /* Тень машины */
-        .car-shadow {
-            position: absolute;
-            bottom: -10px;
-            left: 10%;
-            width: 80%;
-            height: 15px;
-            background: radial-gradient(ellipse at center, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 70%);
-            z-index: 0;
+            margin-bottom: 30px;
             transition: transform 0.1s;
         }
-
         .car-emoji {
-            font-size: 100px;
+            font-size: 110px;
             z-index: 2;
             position: relative;
-            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
         }
 
-        .speed-display {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .speed-num { font-size: 42px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
-        .speed-unit { font-size: 12px; color: var(--text-sec); font-weight: 600; text-transform: uppercase; }
+        .speed-display { text-align: center; margin-bottom: 20px; }
+        .speed-num { font-size: 48px; font-weight: 900; line-height: 1; }
+        .speed-unit { font-size: 12px; color: var(--text-sec); font-weight: 700; text-transform: uppercase; }
 
-        /* Progress Bar (Поездка) */
         .trip-progress {
-            width: 80%;
-            height: 10px;
+            width: 85%;
+            height: 12px;
             background: #E5E7EB;
             border-radius: 6px;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            position: relative;
         }
         .trip-fill {
             height: 100%;
@@ -153,44 +139,74 @@
             width: 0%;
             transition: width 0.1s linear;
         }
+
         .status-text {
             font-size: 13px;
             color: var(--text-sec);
             height: 20px;
+            font-weight: 500;
         }
 
-        /* --- BUTTONS --- */
+        /* --- ACTION AREA --- */
         .action-container {
             width: 100%;
             padding: 20px;
             box-sizing: border-box;
-            background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
         }
-
         .btn-main {
             width: 100%;
-            height: 56px;
+            height: 60px;
             border: none;
-            border-radius: 16px;
-            background: var(--text-main); /* Black */
+            border-radius: 18px;
+            background: var(--text-main);
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
             cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: transform 0.1s;
         }
-        
-        .btn-main:active { transform: scale(0.98); }
-        .btn-main:disabled { background: #D1D5DB; color: #9CA3AF; box-shadow: none; cursor: not-allowed; }
-
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { background: #D1D5DB; color: #9CA3AF; box-shadow: none; }
         .btn-main.fuel-mode { background: var(--accent); color: black; }
 
-        /* --- NAV BAR --- */
+        /* --- MODAL (LEVEL UP) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal-card {
+            background: white;
+            width: 80%;
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-title { font-size: 24px; font-weight: 900; margin-bottom: 10px; }
+        .modal-text { color: var(--text-sec); margin-bottom: 20px; font-size: 14px; }
+        .btn-modal {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* --- NAV --- */
         .nav {
             background: var(--card-bg);
             border-top: 1px solid #E5E7EB;
@@ -203,99 +219,82 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             width: 60px;
-            height: 50px;
             color: #9CA3AF;
             font-size: 10px;
             font-weight: 600;
             gap: 4px;
         }
         .nav-item.active { color: var(--text-main); }
-        .nav-item svg { width: 24px; height: 24px; stroke-width: 2; }
+        .nav-item svg { width: 24px; height: 24px; }
 
-        /* --- ICONS SVG --- */
-        .icon { width: 18px; height: 18px; }
-
-        /* --- SHOP --- */
+        /* --- SHOP & ICONS --- */
         #shop-layer {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 65px;
-            background: var(--bg-color);
-            z-index: 50;
-            padding: 20px;
-            overflow-y: auto;
-            display: none;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 65px;
+            background: var(--bg-color); z-index: 50;
+            padding: 20px; overflow-y: auto; display: none;
         }
         .shop-card {
-            background: white;
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: white; padding: 16px; border-radius: 16px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            border: 1px solid #E5E7EB;
         }
         .btn-buy {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            border: none;
-            background: #F3F4F6;
-            color: var(--text-main);
+            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;
+            border: none; background: #F3F4F6; color: var(--text-main);
         }
-        .btn-buy.active { background: var(--text-main); color: white; }
+        .icon { width: 18px; height: 18px; }
 
-        /* Animations */
-        @keyframes float { 0%{transform:translateY(0)} 50%{transform:translateY(-5px)} 100%{transform:translateY(0)} }
-        .anim-float { animation: float 3s ease-in-out infinite; }
-        
+        /* --- ANIMATIONS --- */
         .pop-text {
-            position: absolute;
-            font-weight: 900;
-            font-size: 20px;
-            color: var(--text-main);
-            pointer-events: none;
-            animation: popUp 0.6s forwards;
+            position: absolute; font-weight: 900; font-size: 22px; color: var(--text-main);
+            pointer-events: none; animation: popUp 0.6s forwards;
         }
-        @keyframes popUp { 0%{opacity:1; transform:translateY(0) scale(0.5)} 100%{opacity:0; transform:translateY(-60px) scale(1.2)} }
+        @keyframes popUp { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-50px)} }
+        
+        .confetti {
+            position: absolute; width: 10px; height: 10px; background: #f00;
+            animation: confetti-fall 3s linear forwards;
+        }
+        @keyframes confetti-fall { 0%{transform:translateY(-10vh) rotate(0deg)} 100%{transform:translateY(110vh) rotate(720deg)} }
 
     </style>
 </head>
 <body>
 
+    <!-- LEVEL UP MODAL -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-card">
+            <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
+            <div class="modal-title">НОВЫЙ УРОВЕНЬ!</div>
+            <div class="modal-text">Ты достиг уровня <span id="modal-lvl">2</span>!<br>Бак полностью заправлен.</div>
+            <button class="btn-modal" onclick="closeModal()">КРУТО</button>
+        </div>
+    </div>
+
     <!-- HEADER -->
     <div class="header">
-        <!-- Money -->
         <div class="res-pill">
             <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span id="ui-money">0</span>
         </div>
-
-        <!-- LEVEL (Центр) -->
         <div class="level-container">
-            <div class="level-badge">УРОВЕНЬ <span id="ui-lvl">1</span></div>
-            <div class="xp-track">
-                <div class="xp-fill" id="ui-xp-fill"></div>
-            </div>
+            <div class="level-badge">LVL <span id="ui-lvl">1</span></div>
+            <div class="xp-track"><div class="xp-fill" id="ui-xp-fill"></div></div>
         </div>
-
-        <!-- Fuel -->
         <div class="res-pill">
             <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             <span id="ui-fuel">10</span>/10
         </div>
     </div>
 
-    <!-- MAIN GAME -->
+    <!-- STAGE -->
     <div id="game-layer" class="stage">
         
-        <div class="car-area anim-float" id="car-wrap" onclick="tap(event)">
+        <div id="client-bubble" class="client-info">👤 Студент</div>
+
+        <div class="car-area" id="car-wrap" onclick="tap(event)">
             <div class="car-emoji" id="ui-car">🚖</div>
-            <div class="car-shadow" id="car-shadow"></div>
         </div>
 
         <div class="speed-display">
@@ -303,15 +302,11 @@
             <div class="speed-unit">km/h</div>
         </div>
 
-        <div class="trip-progress">
-            <div class="trip-fill" id="ui-trip-fill"></div>
-        </div>
+        <div class="trip-progress"><div class="trip-fill" id="ui-trip-fill"></div></div>
         <div class="status-text" id="ui-status">Свободен</div>
 
         <div class="action-container">
-            <button id="btn-main" class="btn-main" onclick="action()">
-                ВЗЯТЬ ЗАКАЗ
-            </button>
+            <button id="btn-main" class="btn-main" onclick="action()">ВЗЯТЬ ЗАКАЗ</button>
         </div>
     </div>
 
@@ -324,13 +319,11 @@
     <!-- NAV -->
     <div class="nav">
         <div class="nav-item active" onclick="setTab('game')">
-            <!-- Icon: Home -->
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
             <span>Работа</span>
         </div>
         <div class="nav-item" onclick="setTab('shop')">
-            <!-- Icon: Car/Grid -->
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
             <span>Гараж</span>
         </div>
     </div>
@@ -339,7 +332,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Данные
+        // БД
         const cars = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
             { id: 1, name: "Sedan", emoji: "🚖", price: 500, reward: 50, power: 1.3 },
@@ -347,41 +340,38 @@
             { id: 3, name: "Hyper", emoji: "🚀", price: 10000, reward: 500, power: 2.2 }
         ];
 
+        const clients = [
+            { name: "Студент", emoji: "🎓", tip: 0 },
+            { name: "Бабушка", emoji: "👵", tip: 5 },
+            { name: "Бизнесмен", emoji: "💼", tip: 50 },
+            { name: "Турист", emoji: "📸", tip: 20 },
+            { name: "Кот", emoji: "🐱", tip: 100 }
+        ];
+
         let state = {
-            money: 0,
-            xp: 0,
-            level: 1,
-            fuel: 10,
-            maxFuel: 10,
-            lastRefill: Date.now(),
-            owned: [0],
-            selected: 0
+            money: 0, xp: 0, level: 1, fuel: 10, maxFuel: 10, lastRefill: Date.now(), owned: [0], selected: 0
         };
 
         let isRunning = false;
         let speed = 0;
         let progress = 0;
         let loop = null;
-        let xpToNext = 100;
+        let currentClient = null;
 
-        // Загрузка
+        // LOAD / SAVE
         const load = () => {
-            let data = localStorage.getItem('taxi_universal_save');
-            if(data) {
-                let parsed = JSON.parse(data);
-                state = { ...state, ...parsed }; // Merge
-            }
-            // Реген бензина
+            let d = localStorage.getItem('taxi_universal_save');
+            if(d) state = { ...state, ...JSON.parse(d) };
+            
             let passed = Math.floor((Date.now() - state.lastRefill)/60000);
             if(passed > 0 && state.fuel < state.maxFuel) {
                 state.fuel = Math.min(state.maxFuel, state.fuel + passed);
                 state.lastRefill = Date.now();
             }
         };
-
         const save = () => localStorage.setItem('taxi_universal_save', JSON.stringify(state));
 
-        // UI
+        // UI REF
         const ui = {
             money: document.getElementById('ui-money'),
             fuel: document.getElementById('ui-fuel'),
@@ -393,7 +383,7 @@
             btn: document.getElementById('btn-main'),
             status: document.getElementById('ui-status'),
             wrap: document.getElementById('car-wrap'),
-            shadow: document.getElementById('car-shadow')
+            clientBubble: document.getElementById('client-bubble')
         };
 
         const render = () => {
@@ -401,15 +391,12 @@
             ui.fuel.innerText = state.fuel;
             ui.lvl.innerText = state.level;
             
-            // XP Calculation
-            xpToNext = state.level * 100;
-            let xpPct = (state.xp / xpToNext) * 100;
-            ui.xpFill.style.width = Math.min(xpPct, 100) + '%';
+            let nextXp = state.level * 100;
+            ui.xpFill.style.width = Math.min((state.xp / nextXp) * 100, 100) + '%';
 
             let car = cars.find(c => c.id === state.selected);
             ui.car.innerText = car.emoji;
 
-            // Button State
             if(!isRunning) {
                 if(state.fuel > 0) {
                     ui.btn.innerText = "ВЗЯТЬ ЗАКАЗ";
@@ -417,8 +404,8 @@
                     ui.btn.disabled = false;
                     ui.status.innerText = "Готов к работе";
                 } else {
-                    ui.btn.innerText = "КУПИТЬ ТОПЛИВО (10💰)";
-                    ui.btn.className = "btn-main fuel-mode"; // Yellow button
+                    ui.btn.innerText = "КУПИТЬ БЕНЗИН (10💰)";
+                    ui.btn.className = "btn-main fuel-mode";
                     ui.btn.disabled = false;
                     ui.status.innerText = "Бак пуст";
                 }
@@ -426,73 +413,55 @@
                 ui.btn.innerText = "В ПУТИ...";
                 ui.btn.className = "btn-main";
                 ui.btn.disabled = true;
-                ui.status.innerText = "Тапай, чтобы ехать!";
+                ui.status.innerText = "Нажми на машину для скорости!";
             }
         };
 
-        // Logic
+        // GAMEPLAY
         const action = () => {
             if(state.fuel <= 0) {
-                if(state.money >= 10) {
-                    state.money -= 10;
-                    state.fuel++;
-                    save();
-                    render();
-                    tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    tg.showAlert("Не хватает монет!");
-                }
+                if(state.money >= 10) { state.money -= 10; state.fuel++; save(); render(); tg.HapticFeedback.notificationOccurred('success'); }
+                else tg.showAlert("Не хватает денег!");
                 return;
             }
 
-            // Start Drive
             state.fuel--;
             state.lastRefill = Date.now();
-            save();
             
+            // Выбор клиента
+            currentClient = clients[Math.floor(Math.random() * clients.length)];
+            ui.clientBubble.innerText = `${currentClient.emoji} ${currentClient.name}`;
+            ui.clientBubble.classList.add('visible');
+
             isRunning = true;
             progress = 0;
             speed = 0;
-            ui.wrap.classList.remove('anim-float');
-            render();
+            save(); render();
             
             loop = setInterval(() => {
-                // Physics
                 speed *= 0.95; 
                 if(speed < 0.1) speed = 0;
-                
                 progress += speed * 0.15;
                 
-                // UI updates in loop
                 ui.speed.innerText = Math.floor(speed * 20);
                 ui.trip.style.width = Math.min(progress, 100) + '%';
                 
-                // Shadow scale based on speed (fake lift)
-                let shadowScale = 1 - (speed/10);
-                ui.shadow.style.transform = `scale(${shadowScale})`;
-
                 if(progress >= 100) finish();
-
             }, 50);
         };
 
         const tap = (e) => {
             if(!isRunning) return;
-            
             let car = cars.find(c => c.id === state.selected);
             let boost = car.power;
-            
             if(speed > 5) boost *= 0.5;
             speed += boost;
-            if(speed > 8) speed = 8;
+            if(speed > 9) speed = 9;
 
-            // Anim
-            ui.wrap.style.transform = "scale(0.95) translateY(2px)";
-            setTimeout(() => ui.wrap.style.transform = "scale(1) translateY(0)", 80);
-            
+            ui.wrap.style.transform = "scale(0.95)";
+            setTimeout(() => ui.wrap.style.transform = "scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
             
-            // Pop text
             if(e) {
                 let el = document.createElement('div');
                 el.className = 'pop-text';
@@ -507,52 +476,83 @@
         const finish = () => {
             clearInterval(loop);
             isRunning = false;
-            ui.wrap.classList.add('anim-float');
+            ui.clientBubble.classList.remove('visible');
             ui.trip.style.width = '0%';
             ui.speed.innerText = '0';
             
             let car = cars.find(c => c.id === state.selected);
-            state.money += car.reward;
+            let reward = car.reward + currentClient.tip;
+            state.money += reward;
             
-            // XP logic
-            state.xp += 25; // XP per ride
-            if(state.xp >= xpToNext) {
-                state.xp -= xpToNext;
+            // Level Logic
+            state.xp += 25;
+            let nextXp = state.level * 100;
+            
+            if(state.xp >= nextXp) {
+                state.xp -= nextXp;
                 state.level++;
-                state.fuel = state.maxFuel; // Full tank on level up!
-                tg.showAlert(`Уровень ${state.level}! Полный бак! 🎉`);
+                state.fuel = state.maxFuel;
+                showLevelUpModal();
+            } else {
+                tg.HapticFeedback.notificationOccurred('success');
             }
 
-            save();
-            render();
-            tg.HapticFeedback.notificationOccurred('success');
+            save(); render();
         };
 
-        // Shop
+        // LEVEL UP SYSTEM
+        function showLevelUpModal() {
+            document.getElementById('modal-lvl').innerText = state.level;
+            let modal = document.getElementById('modal-overlay');
+            modal.style.display = 'flex';
+            
+            // Animation trick
+            setTimeout(() => {
+                modal.style.opacity = '1';
+                modal.querySelector('.modal-card').style.transform = 'scale(1)';
+            }, 10);
+
+            fireConfetti();
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        function closeModal() {
+            let modal = document.getElementById('modal-overlay');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function fireConfetti() {
+            for(let i=0; i<30; i++) {
+                let c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + '%';
+                c.style.background = `hsl(${Math.random()*360}, 100%, 50%)`;
+                c.style.animationDuration = (Math.random()*2+2)+'s';
+                document.body.appendChild(c);
+                setTimeout(()=>c.remove(), 4000);
+            }
+        }
+
+        // SHOP & NAV
         const renderShop = () => {
             const list = document.getElementById('shop-list');
             list.innerHTML = '';
             cars.forEach(c => {
                 let isOwned = state.owned.includes(c.id);
-                let isSel = state.selected === c.id;
+                let btn = isOwned 
+                    ? `<button class="btn-buy" onclick="pick(${c.id})">ВЗЯТЬ</button>`
+                    : `<button class="btn-buy" onclick="buy(${c.id})">${c.price}💰</button>`;
                 
-                let btn = '';
-                if(isSel) btn = `<button class="btn-buy active">ВЫБРАНО</button>`;
-                else if(isOwned) btn = `<button class="btn-buy" onclick="pick(${c.id})">ВЗЯТЬ</button>`;
-                else btn = `<button class="btn-buy" onclick="buy(${c.id})">${c.price}💰</button>`;
+                if(state.selected === c.id) btn = `<button class="btn-buy" style="background:var(--text-main);color:white">ВЫБРАНО</button>`;
 
                 let div = document.createElement('div');
                 div.className = 'shop-card';
                 div.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div style="font-size:30px">${c.emoji}</div>
-                        <div>
-                            <div style="font-weight:700">${c.name}</div>
-                            <div style="font-size:11px; color:#6B7280">Доход: ${c.reward}</div>
-                        </div>
-                    </div>
-                    ${btn}
-                `;
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="font-size:32px">${c.emoji}</div>
+                        <div><div style="font-weight:700">${c.name}</div><div style="font-size:12px;color:#6B7280">+${c.reward}</div></div>
+                    </div>${btn}`;
                 list.appendChild(div);
             });
         };
@@ -566,10 +566,7 @@
                 save(); render(); renderShop();
             }
         };
-        window.pick = (id) => {
-            state.selected = id;
-            save(); render(); renderShop();
-        };
+        window.pick = (id) => { state.selected = id; save(); render(); renderShop(); };
 
         window.setTab = (t) => {
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
@@ -583,20 +580,13 @@
             }
         };
 
-        // Fuel Timer
         setInterval(() => {
-            if(state.fuel < state.maxFuel) {
-                let diff = Date.now() - state.lastRefill;
-                if(diff >= 60000) {
-                    state.fuel++;
-                    state.lastRefill = Date.now();
-                    save(); render();
-                }
+            if(state.fuel < state.maxFuel && (Date.now()-state.lastRefill >= 60000)) {
+                state.fuel++; state.lastRefill = Date.now(); save(); render();
             }
         }, 1000);
 
-        load();
-        render();
+        load(); render();
 
     </script>
 </body>
