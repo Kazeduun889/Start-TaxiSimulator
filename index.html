@@ -3,516 +3,578 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi Sim 0.4</title>
+    <title>Taxi Premium 0.5</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --text-color: #ffffff;
-            --btn-color: #3390ec;
-            --secondary-bg: #2b2b2b;
-            --road-color: #333;
-            --line-color: #555;
-            --green: #2ecc71;
-            --yellow: #f1c40f;
+            --bg-grad: radial-gradient(circle at center, #2b2b2b 0%, #000000 100%);
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --accent: #f1c40f; /* Taxi Yellow */
+            --accent-glow: rgba(241, 196, 15, 0.4);
+            --text-main: #ffffff;
+            --text-sec: #888888;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: var(--bg-grad);
+            color: var(--text-main);
+            font-family: var(--font);
             margin: 0;
-            padding: 0; /* Убрали паддинги для дороги */
+            padding: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            user-select: none;
             overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- UI ПАНЕЛИ --- */
-        .ui-padding { padding: 15px; }
-
-        .top-bar {
+        /* --- ВЕРХНЯЯ СТАТИСТИКА --- */
+        .header {
             display: flex;
             justify-content: space-between;
-            background: var(--secondary-bg);
-            padding: 10px 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            align-items: center;
+            padding: 20px;
+            padding-top: 25px;
             z-index: 10;
         }
-        .stat-group { display: flex; flex-direction: column; }
-        .stat-val { font-weight: bold; font-size: 16px; }
-        .stat-label { font-size: 11px; color: #888; }
 
-        /* --- ДОРОГА И МАШИНА --- */
-        .game-area {
+        .stat-badge {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .fuel-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 5px var(--success);
+        }
+        .fuel-dot.low { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+
+        /* --- ЦЕНТРАЛЬНАЯ ЧАСТЬ (АВТО) --- */
+        .stage {
             flex: 1;
-            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: var(--road-color);
-            overflow: hidden;
-        }
-
-        /* Анимация разметки дороги */
-        .road-lines {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(
-                180deg,
-                transparent 0,
-                transparent 50px,
-                var(--line-color) 50px,
-                var(--line-color) 100px
-            );
-            /* Скорость будет меняться через JS */
-            animation: moveRoad 1s linear infinite;
-            animation-play-state: paused; 
-            opacity: 0.3;
-        }
-
-        @keyframes moveRoad {
-            from { background-position: 0 0; }
-            to { background-position: 0 100px; }
-        }
-
-        .car-container {
             position: relative;
-            z-index: 5;
+        }
+
+        .car-wrapper {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .car-emoji {
+            font-size: 120px;
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        /* Эффект скорости (круги) */
+        .speed-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s;
+        }
+
+        .speedometer {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .speed-val {
+            font-size: 42px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+        .speed-label {
+            font-size: 12px;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* --- ПРОГРЕСС БАР --- */
+        .progress-area {
+            width: 85%;
             margin-bottom: 20px;
         }
-        
-        .car-emoji {
-            font-size: 90px;
-            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
-            transition: transform 0.1s;
-        }
-
-        .click-effect {
-            position: absolute;
-            color: white;
-            font-weight: bold;
-            font-size: 20px;
-            pointer-events: none;
-            animation: floatUp 0.8s ease-out forwards;
-            text-shadow: 0 0 5px black;
-        }
-
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
-        }
-
-        /* --- ИНТЕРФЕЙС В ПУТИ --- */
-        .progress-wrapper {
-            width: 80%;
-            z-index: 10;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 12px;
-            backdrop-filter: blur(5px);
-        }
-
-        .progress-bar {
-            height: 10px;
-            background: #444;
-            border-radius: 5px;
+        .progress-track {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
             overflow: hidden;
-            margin-bottom: 5px;
         }
         .progress-fill {
             height: 100%;
             width: 0%;
-            background: var(--yellow);
-        }
-        .speed-text { text-align: center; font-family: monospace; font-size: 14px; }
-
-        .hint-text {
-            position: absolute;
-            bottom: 100px;
-            width: 100%;
-            text-align: center;
-            color: rgba(255,255,255,0.5);
-            font-size: 14px;
-            z-index: 5;
-            animation: pulse 2s infinite;
+            background: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            transition: width 0.1s linear;
         }
 
-        @keyframes pulse { 0% {opacity:0.3} 50% {opacity:0.8} 100% {opacity:0.3} }
-
-        /* --- КНОПКИ --- */
-        .controls {
+        /* --- КНОПКИ УПРАВЛЕНИЯ --- */
+        .action-area {
             padding: 20px;
-            background: var(--secondary-bg);
-            border-top: 1px solid #333;
-            z-index: 10;
+            padding-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: linear-gradient(to top, #000 0%, transparent 100%);
         }
 
         .main-btn {
-            width: 100%;
-            padding: 18px;
-            background: var(--btn-color);
-            color: white;
+            background: var(--accent);
+            color: #000;
             border: none;
-            border-radius: 14px;
+            padding: 18px;
+            border-radius: 16px;
             font-size: 18px;
-            font-weight: 800;
-            text-transform: uppercase;
-            box-shadow: 0 4px 0 #2368a8;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(241, 196, 15, 0.3);
+            transition: transform 0.1s, opacity 0.2s;
         }
-        .main-btn:active { transform: translateY(4px); box-shadow: none; }
-        .main-btn:disabled { background: #444; color: #888; box-shadow: none; transform: none; }
+        .main-btn:active { transform: scale(0.98); }
+        .main-btn:disabled { background: #333; color: #666; box-shadow: none; }
 
-        /* --- МЕНЮ ТАБЫ --- */
-        .tabs {
+        /* --- НАВИГАЦИЯ --- */
+        .nav {
             display: flex;
             background: #111;
+            padding-bottom: env(safe-area-inset-bottom); /* Для iPhone */
         }
-        .tab {
+        .nav-item {
             flex: 1;
             padding: 15px;
             text-align: center;
-            color: #666;
-            font-size: 14px;
+            color: #555;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
         }
-        .tab.active { color: white; background: var(--secondary-bg); border-top: 2px solid var(--btn-color); }
+        .nav-item.active {
+            color: var(--accent);
+            background: rgba(255,255,255,0.03);
+        }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 4px; }
 
-        /* --- МАГАЗИН --- */
-        #shop-view { display: none; padding: 20px; overflow-y: auto; height: 100%; }
-        .shop-card {
-            background: #333;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* --- МАГАЗИН (Оверлей) --- */
+        #shop-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 80px; /* Leave space for nav */
+            background: var(--bg-grad);
+            z-index: 20;
+            padding: 20px;
+            overflow-y: auto;
         }
-        .shop-btn {
-            padding: 8px 12px;
-            border-radius: 6px;
+        .shop-header { font-size: 24px; font-weight: bold; margin-bottom: 20px; margin-top: 40px;}
+        
+        .car-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .buy-btn {
+            background: #333;
+            color: white;
             border: none;
-            background: var(--btn-color);
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .buy-btn.active { background: var(--accent); color: black; }
+
+        /* --- Анимации --- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+        
+        /* Всплывающий текст */
+        .pop-text {
+            position: absolute;
             color: white;
             font-weight: bold;
+            font-size: 24px;
+            pointer-events: none;
+            animation: popUp 0.6s ease-out forwards;
         }
-        .shop-btn:disabled { opacity: 0.5; background: #555; }
+        @keyframes popUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.5); }
+        }
 
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="stat-group">
-            <span class="stat-val" id="balance">0 💰</span>
-            <span class="stat-label">Баланс</span>
+    <!-- Статистика -->
+    <div class="header">
+        <div class="stat-badge">
+            <span id="balance">0</span> 💰
         </div>
-        <div class="stat-group" style="align-items: center;">
-            <span class="stat-val" style="color:var(--green)">LVL <span id="lvl">1</span></span>
-            <span class="stat-label"><span id="xp">0</span> XP</span>
-        </div>
-        <div class="stat-group" style="align-items: flex-end;">
-            <span class="stat-val">⛽ <span id="fuel">10</span>/<span id="max-fuel">10</span></span>
-            <span class="stat-label" id="timer">Полный</span>
+        <div class="stat-badge">
+            <div id="fuel-dot" class="fuel-dot"></div>
+            <span id="fuel">10</span>/10
+            <span id="timer" style="font-size: 10px; color: #666; margin-left:5px"></span>
         </div>
     </div>
 
-    <!-- ИГРОВАЯ ОБЛАСТЬ -->
-    <div id="game-view" class="game-area" onclick="tapCar(event)">
-        <div class="road-lines" id="road"></div>
-
-        <div class="hint-text" id="hint">Нажми "Взять заказ"</div>
-
-        <div class="car-container">
-            <div id="car" class="car-emoji">🚖</div>
+    <!-- Игровая сцена -->
+    <div id="game-view" class="stage">
+        <div class="car-wrapper floating" id="car-wrap" onclick="tapCar(event)">
+            <div class="speed-ring" id="ring"></div>
+            <div class="car-emoji" id="car-emoji">🚖</div>
         </div>
 
-        <div class="progress-wrapper" id="progress-ui" style="opacity: 0;">
-            <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
-            <div class="speed-text"><span id="speed-val">0</span> km/h</div>
+        <div class="speedometer">
+            <div class="speed-val"><span id="speed">0</span></div>
+            <div class="speed-label">km/h</div>
+        </div>
+
+        <div style="flex:1"></div> <!-- Распорка -->
+
+        <div class="progress-area">
+            <div class="progress-track">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+            <div id="status" style="text-align: center; font-size: 13px; color: #666; margin-top: 8px;">
+                Свободен
+            </div>
+        </div>
+
+        <div class="action-area">
+            <button id="main-btn" class="main-btn" onclick="takeOrder()">ВЗЯТЬ ЗАКАЗ</button>
         </div>
     </div>
 
-    <!-- МАГАЗИН -->
-    <div id="shop-view"></div>
-
-    <div class="controls">
-        <button id="main-btn" class="main-btn" onclick="actionBtn()">ВЗЯТЬ ЗАКАЗ</button>
+    <!-- Магазин -->
+    <div id="shop-screen">
+        <div class="shop-header">Гараж</div>
+        <div id="shop-list"></div>
     </div>
 
-    <div class="tabs">
-        <div class="tab active" onclick="setTab('game')">РУЛЬ</div>
-        <div class="tab" onclick="setTab('shop')">ГАРАЖ</div>
+    <!-- Навигация -->
+    <div class="nav">
+        <div class="nav-item active" onclick="switchTab('game')">
+            <span class="nav-icon">🚖</span>Работа
+        </div>
+        <div class="nav-item" onclick="switchTab('shop')">
+            <span class="nav-icon">🏪</span>Гараж
+        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const cars = [
-            { id: 0, name: "Разбитая Лада", emoji: "🚙", price: 0, reward: 20, acc: 0.5 },
-            { id: 1, name: "Солярис", emoji: "🚖", price: 500, reward: 45, acc: 0.7 },
-            { id: 2, name: "Мерс E-шка", emoji: "🚘", price: 2500, reward: 120, acc: 1.0 },
-            { id: 3, name: "Феррари", emoji: "🏎️", price: 10000, reward: 350, acc: 1.5 },
-            { id: 4, name: "НЛО", emoji: "🛸", price: 50000, reward: 1000, acc: 3.0 }
+        // --- КОНФИГУРАЦИЯ ---
+        const SAVE_KEY = 'taxi_universal_save'; // Единый ключ сохранения
+        const REGEN_TIME = 60000; // 1 минута
+
+        const carsDB = [
+            { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
+            { id: 1, name: "Sedan", emoji: "🚖", price: 500, reward: 50, power: 1.3 },
+            { id: 2, name: "Sport", emoji: "🏎️", price: 2500, reward: 150, power: 1.8 },
+            { id: 3, name: "Super", emoji: "🚀", price: 10000, reward: 500, power: 2.5 }
         ];
 
+        // --- СОСТОЯНИЕ ---
         let state = {
             money: 0,
-            xp: 0,
-            level: 1,
             fuel: 10,
+            maxFuel: 10,
             lastRefill: Date.now(),
             owned: [0],
-            selected: 0
+            selected: 0,
+            level: 1
         };
-
-        // Настройки баланса (сложность)
-        const REGEN_TIME = 60000;
-        const LEVEL_XP_STEP = 100; // XP для следующего уровня
-        const TRIP_DISTANCE = 1000; // Условные метры пути
 
         // Переменные сессии
         let isDriving = false;
-        let distanceCovered = 0;
         let speed = 0;
-        let driveLoop = null;
+        let progress = 0;
+        let loop = null;
 
-        // Загрузка
-        if(localStorage.getItem('taxi_v4')) {
-            state = JSON.parse(localStorage.getItem('taxi_v4'));
-            // Оффлайн реген
-            let passed = Date.now() - state.lastRefill;
-            let amount = Math.floor(passed / REGEN_TIME);
-            let maxFuel = 9 + state.level; // 10 на 1 уровне, 11 на 2 и т.д.
-            if(amount > 0 && state.fuel < maxFuel) {
-                state.fuel = Math.min(maxFuel, state.fuel + amount);
-                state.lastRefill = Date.now();
+        // --- СИСТЕМА СОХРАНЕНИЙ ---
+        function loadGame() {
+            // 1. Пробуем загрузить основной сейв
+            const data = localStorage.getItem(SAVE_KEY);
+            if (data) {
+                state = { ...state, ...JSON.parse(data) };
+            } 
+            // 2. Если его нет, ищем старые версии (миграция)
+            else if (localStorage.getItem('taxi_v4')) {
+                const old = JSON.parse(localStorage.getItem('taxi_v4'));
+                state.money = old.money || 0;
+                state.fuel = old.fuel || 10;
+                state.owned = old.owned || [0];
+                saveGame(); // Сразу сохраняем в новый формат
+            }
+
+            // Оффлайн реген бензина
+            const now = Date.now();
+            const passed = now - state.lastRefill;
+            const toRegen = Math.floor(passed / REGEN_TIME);
+            if (toRegen > 0 && state.fuel < state.maxFuel) {
+                state.fuel = Math.min(state.maxFuel, state.fuel + toRegen);
+                state.lastRefill = now;
             }
         }
 
-        // --- ЛОГИКА ---
+        function saveGame() {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        }
 
-        function getMaxFuel() { return 9 + state.level; }
-
-        function updateUI() {
-            document.getElementById('balance').innerText = `${state.money} 💰`;
-            document.getElementById('lvl').innerText = state.level;
-            document.getElementById('xp').innerText = `${state.xp}/${state.level * LEVEL_XP_STEP}`;
-            document.getElementById('fuel').innerText = state.fuel;
-            document.getElementById('max-fuel').innerText = getMaxFuel();
-            
-            let car = cars.find(c => c.id === state.selected);
-            document.getElementById('car').innerText = car.emoji;
-
-            const btn = document.getElementById('main-btn');
-            if(isDriving) {
-                btn.innerText = "В ПУТИ...";
-                btn.disabled = true;
-            } else {
-                if(state.fuel > 0) {
-                    btn.innerText = "ВЗЯТЬ ЗАКАЗ (-1⛽)";
-                    btn.disabled = false;
+        // --- ГЕЙМПЛЕЙ ---
+        function takeOrder() {
+            if (state.fuel <= 0) {
+                // Покупка бензина
+                if (state.money >= 10) {
+                    state.money -= 10;
+                    state.fuel++;
+                    saveGame();
+                    updateUI();
+                    tg.HapticFeedback.notificationOccurred('success');
                 } else {
-                    btn.innerText = "НЕТ БЕНЗИНА";
-                    btn.disabled = true;
+                    tg.showAlert("Нет денег на бензин (10💰)");
+                }
+                return;
+            }
+
+            state.fuel--;
+            state.lastRefill = Date.now();
+            saveGame();
+
+            isDriving = true;
+            progress = 0;
+            speed = 0;
+            
+            // UI Update
+            document.getElementById('status').innerText = "Везем клиента...";
+            document.getElementById('status').style.color = "#f1c40f";
+            document.getElementById('main-btn').innerText = "В ПУТИ";
+            document.getElementById('main-btn').disabled = true;
+            document.getElementById('car-wrap').classList.remove('floating'); // Остановить парение
+            
+            loop = setInterval(gameLoop, 50);
+            updateUI();
+        }
+
+        function gameLoop() {
+            // Физика: трение
+            speed *= 0.94; // Быстро падает
+            if (speed < 0.1) speed = 0;
+
+            progress += speed * 0.1;
+
+            // Визуал
+            document.getElementById('speed').innerText = Math.floor(speed * 20);
+            document.getElementById('progress').style.width = Math.min(progress, 100) + '%';
+            
+            // Кольцо эффекта
+            const ringScale = 0.5 + (speed / 5);
+            const ringOp = Math.min(speed / 3, 1);
+            document.getElementById('ring').style.transform = `scale(${ringScale})`;
+            document.getElementById('ring').style.opacity = ringOp;
+
+            if (progress >= 100) {
+                finishOrder();
+            }
+        }
+
+        function tapCar(e) {
+            if (!isDriving) return;
+
+            const car = carsDB.find(c => c.id === state.selected);
+            
+            // Ускорение
+            let boost = car.power;
+            if (speed > 5) boost *= 0.5; // Сложнее на высокой скорости
+            speed += boost;
+            if (speed > 8) speed = 8; // Максимум
+
+            // Анимация удара
+            const wrap = document.getElementById('car-wrap');
+            wrap.style.transform = 'scale(0.95)';
+            setTimeout(() => wrap.style.transform = 'scale(1)', 50);
+
+            // Вибрация
+            tg.HapticFeedback.impactOccurred('medium');
+
+            // Всплывашка
+            if (e) showPop(e.clientX, e.clientY);
+        }
+
+        function showPop(x, y) {
+            const el = document.createElement('div');
+            el.className = 'pop-text';
+            el.innerText = '+' + Math.floor(Math.random()*5+10);
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 600);
+        }
+
+        function finishOrder() {
+            clearInterval(loop);
+            isDriving = false;
+            
+            const car = carsDB.find(c => c.id === state.selected);
+            state.money += car.reward;
+            saveGame();
+
+            tg.HapticFeedback.notificationOccurred('success');
+            document.getElementById('status').innerText = "Приехали!";
+            document.getElementById('status').style.color = "#2ecc71";
+            document.getElementById('speed').innerText = "0";
+            document.getElementById('ring').style.opacity = 0;
+            document.getElementById('car-wrap').classList.add('floating');
+
+            setTimeout(() => {
+                if (!isDriving) {
+                    document.getElementById('progress').style.width = '0%';
+                    updateUI();
+                }
+            }, 1000);
+            updateUI();
+        }
+
+        // --- ИНТЕРФЕЙС ---
+        function updateUI() {
+            document.getElementById('balance').innerText = state.money;
+            document.getElementById('fuel').innerText = state.fuel;
+            
+            const fuelDot = document.getElementById('fuel-dot');
+            if (state.fuel > 0) {
+                fuelDot.className = 'fuel-dot';
+            } else {
+                fuelDot.className = 'fuel-dot low';
+            }
+
+            // Кнопка
+            const btn = document.getElementById('main-btn');
+            if (!isDriving) {
+                if (state.fuel > 0) {
+                    btn.innerText = "ВЗЯТЬ ЗАКАЗ";
+                    btn.disabled = false;
+                    btn.style.background = "var(--accent)";
+                    btn.style.color = "black";
+                    document.getElementById('status').innerText = "Готов к работе";
+                    document.getElementById('status').style.color = "#666";
+                } else {
+                    btn.innerText = "КУПИТЬ БЕНЗИН (10💰)";
+                    btn.style.background = "#333";
+                    btn.style.color = "white";
+                    btn.disabled = false;
+                    document.getElementById('status').innerText = "Бак пуст";
+                    document.getElementById('status').style.color = "var(--danger)";
                 }
             }
-            localStorage.setItem('taxi_v4', JSON.stringify(state));
+
+            // Машина
+            const curCar = carsDB.find(c => c.id === state.selected);
+            document.getElementById('car-emoji').innerText = curCar.emoji;
         }
 
-        // Таймер бензина
+        // Таймер топлива
         setInterval(() => {
-            if(state.fuel < getMaxFuel()) {
-                let left = REGEN_TIME - (Date.now() - state.lastRefill);
-                if(left <= 0) {
+            if (state.fuel < state.maxFuel) {
+                const left = REGEN_TIME - (Date.now() - state.lastRefill);
+                if (left <= 0) {
                     state.fuel++;
                     state.lastRefill = Date.now();
+                    saveGame();
                     updateUI();
                 } else {
                     document.getElementById('timer').innerText = Math.ceil(left/1000) + 'с';
                 }
             } else {
-                document.getElementById('timer').innerText = "Полный";
-                state.lastRefill = Date.now();
+                document.getElementById('timer').innerText = '';
             }
         }, 1000);
 
-        function actionBtn() {
-            if(state.fuel <= 0) {
-                // Если нет бензина - можно купить
-                if(state.money >= 10) {
-                    state.money -= 10;
-                    state.fuel++;
-                    updateUI();
-                    tg.showAlert("Заправили 1 литр!");
-                } else {
-                    tg.showAlert("Бензин кончился! Жди или копи 10💰");
-                }
-                return;
-            }
-            startDrive();
-        }
-
-        function startDrive() {
-            state.fuel--;
-            state.lastRefill = Date.now(); // Сброс таймера чтобы не читерили
-            isDriving = true;
-            distanceCovered = 0;
-            speed = 0;
-
-            document.getElementById('progress-ui').style.opacity = 1;
-            document.getElementById('hint').innerText = "Тапай сильно, дорога длинная!";
-            document.getElementById('road').style.animationPlayState = 'running';
-            
-            updateUI();
-
-            const carStats = cars.find(c => c.id === state.selected);
-
-            driveLoop = setInterval(() => {
-                // Физика
-                // 1. Сопротивление (машина быстро теряет скорость сама)
-                speed *= 0.96; 
-                
-                // 2. Минимальная скорость (ползет)
-                if(speed < 0.5) speed = 0.5;
-
-                // 3. Прогресс
-                distanceCovered += speed;
-                
-                // Визуал
-                let progressPct = (distanceCovered / TRIP_DISTANCE) * 100;
-                document.getElementById('fill').style.width = Math.min(progressPct, 100) + '%';
-                
-                let displaySpeed = Math.floor(speed * 20); // Фейковая скорость км/ч
-                document.getElementById('speed-val').innerText = displaySpeed;
-
-                // Анимация дороги зависит от скорости
-                let animDuration = Math.max(0.1, 1 - (displaySpeed / 200));
-                document.getElementById('road').style.animationDuration = `${animDuration}s`;
-
-                // Тряска
-                if(displaySpeed > 50) {
-                    let shake = (Math.random() - 0.5) * 5;
-                    document.getElementById('car').style.transform = `translateX(${shake}px) scale(1.05)`;
-                } else {
-                    document.getElementById('car').style.transform = `translateX(0) scale(1)`;
-                }
-
-                // Финиш
-                if(distanceCovered >= TRIP_DISTANCE) {
-                    finishDrive(carStats);
-                }
-
-            }, 50);
-        }
-
-        function tapCar(e) {
-            if(!isDriving) return;
-
-            const carStats = cars.find(c => c.id === state.selected);
-            
-            // Буст скорости зависит от машины
-            // Чем выше скорость, тем сложнее разгоняться
-            let boost = carStats.acc * 2;
-            if(speed > 10) boost *= 0.5; 
-            
-            speed += boost;
-            if(speed > 15 * carStats.acc) speed = 15 * carStats.acc; // Максималка
-
-            tg.HapticFeedback.impactOccurred('light');
-
-            // Всплывающая цифра
-            showFloatText(e.clientX, e.clientY);
-        }
-
-        function showFloatText(x, y) {
-            // Если клик не передан (например с клавиатуры), берем центр
-            if(!x) { x = window.innerWidth/2; y = window.innerHeight/2; }
-            
-            const el = document.createElement('div');
-            el.className = 'click-effect';
-            el.innerText = '💨'; // Или "+KM"
-            el.style.left = (x - 10) + 'px';
-            el.style.top = (y - 20) + 'px';
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 800);
-        }
-
-        function finishDrive(car) {
-            clearInterval(driveLoop);
-            isDriving = false;
-            document.getElementById('road').style.animationPlayState = 'paused';
-            document.getElementById('progress-ui').style.opacity = 0;
-            document.getElementById('hint').innerText = "Клиент доволен!";
-            document.getElementById('car').style.transform = `scale(1)`;
-            
-            // Награда
-            state.money += car.reward;
-            
-            // Опыт
-            let xpGain = 20;
-            state.xp += xpGain;
-            
-            // Проверка уровня
-            let needed = state.level * LEVEL_XP_STEP;
-            if(state.xp >= needed) {
-                state.xp -= needed;
-                state.level++;
-                tg.showAlert(`🎉 УРОВЕНЬ ${state.level}! Бак увеличен!`);
-                tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-
-            updateUI();
-        }
-
-        // --- МАГАЗИН И ТАБЫ ---
+        // --- МАГАЗИН ---
         function renderShop() {
-            const container = document.getElementById('shop-view');
-            container.innerHTML = '';
-            cars.forEach(car => {
-                const el = document.createElement('div');
-                el.className = 'shop-card';
+            const list = document.getElementById('shop-list');
+            list.innerHTML = '';
+            
+            carsDB.forEach(car => {
+                const isOwned = state.owned.includes(car.id);
+                const isSelected = state.selected === car.id;
                 
-                let btnTxt = 'Купить';
-                let dis = false;
-                let onclick = `buy(${car.id})`;
-
-                if(state.owned.includes(car.id)) {
-                    if(state.selected === car.id) {
-                        btnTxt = 'Выбрано';
-                        dis = true;
-                    } else {
-                        btnTxt = 'Выбрать';
-                        onclick = `selectCar(${car.id})`;
-                    }
+                const div = document.createElement('div');
+                div.className = 'car-card';
+                
+                let btnHtml = '';
+                if (isSelected) {
+                    btnHtml = `<button class="buy-btn active" disabled>Выбрано</button>`;
+                } else if (isOwned) {
+                    btnHtml = `<button class="buy-btn" onclick="selectCar(${car.id})">Выбрать</button>`;
                 } else {
-                    btnTxt = `${car.price}💰`;
-                    if(state.money < car.price) dis = true;
+                    const canBuy = state.money >= car.price;
+                    btnHtml = `<button class="buy-btn" style="${canBuy ? 'background:white; color:black' : 'opacity:0.5'}" onclick="buyCar(${car.id})">${car.price}💰</button>`;
                 }
 
-                el.innerHTML = `
-                    <div>
-                        <div style="font-size:24px">${car.emoji} <b>${car.name}</b></div>
-                        <div style="color:#888; font-size:12px;">Ускорение: x${car.acc} | Награда: ${car.reward}</div>
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:15px">
+                        <div style="font-size:32px">${car.emoji}</div>
+                        <div>
+                            <div style="font-weight:bold; font-size:16px">${car.name}</div>
+                            <div style="font-size:12px; color:#888">+${car.reward}💰 / Power: ${car.power}</div>
+                        </div>
                     </div>
-                    <button class="shop-btn" ${dis ? 'disabled' : ''} onclick="${onclick}">${btnTxt}</button>
+                    ${btnHtml}
                 `;
-                container.appendChild(el);
+                list.appendChild(div);
             });
         }
 
-        window.buy = (id) => {
-            let car = cars.find(c => c.id === id);
-            if(state.money >= car.price) {
+        window.buyCar = (id) => {
+            const car = carsDB.find(c => c.id === id);
+            if (state.money >= car.price) {
                 state.money -= car.price;
                 state.owned.push(id);
                 state.selected = id;
+                saveGame();
                 renderShop();
                 updateUI();
                 tg.HapticFeedback.notificationOccurred('success');
@@ -521,24 +583,25 @@
 
         window.selectCar = (id) => {
             state.selected = id;
+            saveGame();
             renderShop();
             updateUI();
         };
 
-        window.setTab = (t) => {
-            document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-            if(t === 'game') {
-                document.getElementById('game-view').style.display = 'flex';
-                document.getElementById('shop-view').style.display = 'none';
-                document.querySelectorAll('.tab')[0].classList.add('active');
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if (tab === 'game') {
+                document.getElementById('shop-screen').style.display = 'none';
+                document.querySelectorAll('.nav-item')[0].classList.add('active');
             } else {
                 renderShop();
-                document.getElementById('game-view').style.display = 'none';
-                document.getElementById('shop-view').style.display = 'block';
-                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('shop-screen').style.display = 'block';
+                document.querySelectorAll('.nav-item')[1].classList.add('active');
             }
         };
 
+        // Запуск
+        loadGame();
         updateUI();
 
     </script>
