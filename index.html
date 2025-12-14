@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 2.5 (Fix)</title>
+    <title>Taxi City 2.6 (Design Fix)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -12,9 +12,9 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴🔴🔴 СЮДА ВСТАВЬ КЛЮЧИ! ИНАЧЕ ДРУГ НЕ ПОЯВИТСЯ В БАЗЕ 🔴🔴🔴
+        // 🔴 ВСТАВЬ СВОИ КЛЮЧИ НИЖЕ 🔴
         // ==================================================================
-  const firebaseConfig = {
+ const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -26,21 +26,13 @@
 
         try {
             if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
-                console.error("⛔ НЕТ КЛЮЧЕЙ FIREBASE!");
-                // Не прерываем игру, просто не подключаем базу
+                alert("Ошибка: Вставь ключи Firebase!");
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
                 window.dbMethods = { doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where };
-                console.log("✅ Firebase подключен");
             }
-        } catch (e) { 
-            console.error("Ошибка Firebase:", e); 
-        }
-        
-        // Запускаем игру даже если база не подключилась
-        window.gameReady = true;
-        document.dispatchEvent(new Event('game-start'));
+        } catch (e) { console.error(e); }
     </script>
 
     <style>
@@ -51,47 +43,87 @@
             --card-bg: #FFFFFF;
             --font: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
         }
-        body.night-mode { --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%); --text-main: #F1F5F9; --card-bg: #1E293B; }
-        body { background: var(--bg-grad); color: var(--text-main); font-family: var(--font); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; transition: background 0.5s; }
-        
+        body.night-mode {
+            --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%);
+            --text-main: #F1F5F9;
+            --card-bg: #1E293B;
+        }
+        body {
+            background: var(--bg-grad); color: var(--text-main); font-family: var(--font);
+            margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column;
+            overflow: hidden; user-select: none; transition: background 0.5s;
+        }
+
+        /* UI */
         .hud-bar { position: absolute; top:0; left:0; right:0; padding:15px; z-index:50; display:flex; justify-content:space-between; pointer-events:none; }
-        .pill { background: rgba(255,255,255,0.2); backdrop-filter:blur(8px); padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; border:1px solid rgba(255,255,255,0.2); pointer-events:auto; }
+        .pill { background: rgba(255,255,255,0.2); backdrop-filter:blur(8px); padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; border:1px solid rgba(255,255,255,0.2); pointer-events:auto; display:flex; align-items:center; gap:5px; }
+        
         .stage { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
         .city-layer { position:absolute; bottom:0; left:0; right:0; pointer-events:none; }
         .city-back { height:35%; background: linear-gradient(to top, #94A3B8 0%, transparent 100%); background-size:120px 100%; opacity:0.6; }
         .road { position:absolute; bottom:0; width:100%; height:90px; background:#334155; border-top:4px solid #FCD34D; z-index:5; }
-        .car-wrap { position:relative; z-index:20; align-self:center; margin-bottom:30px; transition:transform 0.1s; cursor:pointer; padding:20px; margin-top:-20px; }
-        .car-emoji { font-size:130px; filter:drop-shadow(0 15px 20px rgba(0,0,0,0.3)); pointer-events:none; }
+        .road-marks { position:absolute; top:45px; width:100%; height:4px; background:repeating-linear-gradient(90deg, #fff 0 40px, transparent 0 80px); opacity:0.4; }
+
         .info-panel { position:absolute; top:80px; width:100%; text-align:center; z-index:10; pointer-events:none; }
         .speed-val { font-size:56px; font-weight:900; }
         .progress-track { width:220px; height:10px; background:rgba(128,128,128,0.3); margin:5px auto; border-radius:5px; overflow:hidden; }
         .progress-fill { height:100%; width:0%; background:var(--accent); }
+
+        .car-wrap { position:relative; z-index:20; align-self:center; margin-bottom:30px; transition:transform 0.1s; cursor:pointer; padding:20px; margin-top:-20px; }
+        .car-emoji { font-size:130px; filter:drop-shadow(0 15px 20px rgba(0,0,0,0.3)); pointer-events:none; }
+
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        .overheated { animation: shake 0.5s; filter: grayscale(100%); }
+
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
+
         .tab-screen { display:none; position:absolute; top:0; left:0; right:0; bottom:75px; background:var(--bg-grad); z-index:60; padding:20px; overflow-y:auto; }
         .tab-screen.active { display:block; }
-        .list-card { background:var(--card-bg); padding:16px; border-radius:16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
+        .header-title { font-size:28px; font-weight:900; margin-bottom:20px; }
+        
+        .list-card { 
+            background:var(--card-bg); padding:16px; border-radius:16px; margin-bottom:12px; 
+            display:flex; align-items:center; justify-content:space-between; 
+            box-shadow:0 4px 10px rgba(0,0,0,0.05); 
+        }
+        
         .shop-btn { background:rgba(128,128,128,0.1); border:none; padding:8px 16px; border-radius:10px; font-weight:700; color:var(--text-main); }
+        .shop-btn.active { background:var(--accent); color:black; }
+        
         .clan-input { width:100%; padding:14px; border-radius:12px; border:1px solid #ccc; margin-bottom:10px; box-sizing:border-box; font-size:16px; }
         .pop-txt { position:absolute; font-weight:900; font-size:28px; color:var(--text-main); pointer-events:none; animation:flyUp 0.6s forwards; z-index:100; }
         @keyframes flyUp { 100% { opacity:0; transform:translateY(-80px) scale(1.5); } }
+
+        /* Leaderboard Switcher */
+        .switch-box { display: flex; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 14px; margin-bottom: 20px; }
+        .switch-btn { flex: 1; border: none; background: transparent; padding: 12px; border-radius: 10px; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; }
+        .switch-btn.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
         .nav { background:var(--card-bg); border-top:1px solid rgba(128,128,128,0.1); padding:8px 0; padding-bottom:env(safe-area-inset-bottom); display:flex; justify-content:space-around; z-index:100; }
         .nav-item { display:flex; flex-direction:column; align-items:center; width:60px; color:#94A3B8; font-size:10px; font-weight:600; }
         .nav-item.active { color:var(--accent); }
         .nav-item svg { width:24px; height:24px; fill:currentColor; }
         .theme-toggle { position:absolute; top:60px; right:15px; width:35px; height:35px; background:rgba(0,0,0,0.3); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:50; }
-        .switch-box { display: flex; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 14px; margin-bottom: 20px; }
-        .switch-btn { flex: 1; border: none; background: transparent; padding: 12px; border-radius: 10px; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; }
-        .switch-btn.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .clan-rank-row { padding:12px; background:white; margin-bottom:8px; border-radius:12px; display:flex; align-items:center; gap:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* CLAN DESIGN RESTORED */
+        .clan-rank-row { 
+            padding:12px; background:var(--card-bg); margin-bottom:8px; border-radius:14px; 
+            display:flex; align-items:center; gap:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+        }
+        .rank-num { font-weight:900; width:25px; color:#94A3B8; font-size: 16px; text-align: center;}
+        .clan-emoji-circle { 
+            width:40px; height:40px; background:#f3f4f6; border-radius:50%; 
+            display:flex; align-items:center; justify-content:center; font-size:22px; 
+        }
     </style>
 </head>
 <body>
 
     <div class="hud-bar">
-        <div class="pill">💰 <span id="ui-money">0</span></div>
+        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
@@ -103,17 +135,22 @@
         
         <div class="info-panel">
             <div class="speed-val"><span id="ui-speed">0</span></div>
+            <div id="overheat-msg" style="color:#EF4444; font-weight:900; display:none; animation:shake 0.5s">🔥 ПЕРЕГРЕВ!</div>
             <div class="progress-track"><div class="progress-fill" id="ui-prog"></div></div>
-            <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:16px;"></div>
+            <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:16px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
         </div>
 
-        <div class="car-wrap" id="car-wrap" onclick="tap(event)"><div class="car-emoji" id="ui-car">🚖</div></div>
+        <div class="car-wrap" id="car-wrap" onclick="tap(event)">
+            <div class="car-emoji" id="ui-car">🚖</div>
+        </div>
         <div class="controls"><button id="btn-act" class="btn-main" onclick="action()">ВЗЯТЬ ЗАКАЗ</button></div>
     </div>
 
     <!-- CLANS -->
     <div id="tab-clans" class="tab-screen">
-        <h2 class="header-title">Кланы 🛡️</h2>
+        <div class="header-title">Мой Клан 🛡️</div>
+
+        <!-- No Clan View -->
         <div id="clan-view-none">
             <div class="list-card" style="display:block; text-align:center;">
                 <h3>Создать Клан</h3>
@@ -122,54 +159,63 @@
                     <input type="text" id="inp-clan-emoji" class="clan-input" placeholder="😎" style="width:60px; text-align:center" maxlength="2">
                     <input type="text" id="inp-clan-name" class="clan-input" placeholder="Название">
                 </div>
-                <input type="text" id="inp-clan-tag" class="clan-input" placeholder="ТЕГ" style="text-transform:uppercase" maxlength="4">
+                <input type="text" id="inp-clan-tag" class="clan-input" placeholder="ТЕГ (3-4 буквы)" style="text-transform:uppercase" maxlength="4">
                 <button class="btn-main" onclick="createClan()">СОЗДАТЬ</button>
             </div>
-            <p style="text-align:center; margin-top:30px; opacity:0.6; font-size:12px">Вступить в клан: Вкладка "Топ" -> "Кланы"</p>
+            
+            <p style="text-align:center; margin-top:30px; opacity:0.6; font-size:14px">
+                Вступить в клан можно во вкладке <b>Топ -> Кланы</b>
+            </p>
         </div>
+
+        <!-- Active Clan View -->
         <div id="clan-view-active" style="display:none">
             <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:16px; text-align:center; margin-bottom:20px;">
                 <div id="ui-my-clan-icon" style="font-size:50px; margin-bottom:10px">🛡️</div>
-                <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0;">TAG</h1>
+                <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0; font-size:30px">TAG</h1>
                 <h2 id="ui-my-clan-name" style="margin:5px 0 0 0">Название</h2>
-                <div style="margin-top:10px;">XP: <span id="ui-my-clan-xp" style="font-weight:bold">0</span></div>
+                <div style="margin-top:10px; font-size:14px; opacity:0.8">
+                    XP Клана: <span id="ui-my-clan-xp" style="color:white; font-weight:bold">0</span>
+                </div>
             </div>
             <h3>Участники</h3>
-            <div id="clan-members-list"></div>
+            <div id="clan-members-list" style="opacity:0.8">Загрузка...</div>
             <button class="btn-main" style="background:#EF4444; color:white; margin-top:20px" onclick="leaveClan()">ВЫЙТИ</button>
         </div>
     </div>
 
     <!-- BUSINESS -->
     <div id="tab-business" class="tab-screen">
-        <h2 class="header-title">Таксопарк 💼</h2>
-        <div class="list-card"><div>👦 <b>Новичок</b> (+1$/с)</div><button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button></div>
-        <div class="list-card"><div>👨‍✈️ <b>Профи</b> (+5$/с)</div><button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button></div>
-        <div class="list-card"><div>🤖 <b>Автопилот</b> (+20$/с)</div><button class="shop-btn" id="btn-hire-expert" onclick="hire('expert')">15000💰</button></div>
+        <div class="header-title">Таксопарк 💼</div>
+        <div class="list-card"><div style="font-size:28px; margin-right:10px">👦</div><div style="flex:1"><b>Новичок</b><br><span style="font-size:12px;opacity:0.7">+1$/сек</span></div><button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button></div>
+        <div class="list-card"><div style="font-size:28px; margin-right:10px">👨‍✈️</div><div style="flex:1"><b>Профи</b><br><span style="font-size:12px;opacity:0.7">+5$/сек</span></div><button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button></div>
+        <div class="list-card"><div style="font-size:28px; margin-right:10px">🤖</div><div style="flex:1"><b>Автопилот</b><br><span style="font-size:12px;opacity:0.7">+20$/сек</span></div><button class="shop-btn" id="btn-hire-expert" onclick="hire('expert')">15000💰</button></div>
     </div>
 
     <!-- SHOP -->
     <div id="tab-shop" class="tab-screen">
-        <h2 class="header-title">Гараж</h2>
+        <div class="header-title">Гараж</div>
         <div id="shop-cars"></div>
-        <h3 style="margin-top:20px">Тюнинг</h3>
-        <div class="list-card"><div><b>Бензобак+</b></div><button class="shop-btn" id="btn-upg-tank" onclick="upgrade('tank')">500💰</button></div>
-        <div class="list-card"><div><b>Турбо Клик</b></div><button class="shop-btn" id="btn-upg-click" onclick="upgrade('click')">1000💰</button></div>
+        <h3 style="margin:20px 0 10px">Тюнинг</h3>
+        <div class="list-card"><div><b>Бензобак+</b><br><span style="font-size:12px;opacity:0.7">+1 Литр</span></div><button class="shop-btn" id="btn-upg-tank" onclick="upgrade('tank')">500💰</button></div>
+        <div class="list-card"><div><b>Турбо Клик</b><br><span style="font-size:12px;opacity:0.7">+10% скорость</span></div><button class="shop-btn" id="btn-upg-click" onclick="upgrade('click')">1000💰</button></div>
     </div>
 
     <!-- LEADERBOARD -->
     <div id="tab-lead" class="tab-screen">
-        <h2 class="header-title">Рейтинг 🏆</h2>
+        <div class="header-title">Рейтинг 🏆</div>
+        
         <div class="switch-box">
             <button class="switch-btn active" id="btn-lead-players" onclick="switchLead('players')">👤 Игроки</button>
             <button class="switch-btn" id="btn-lead-clans" onclick="switchLead('clans')">🛡️ Кланы</button>
         </div>
+
         <div id="leaderboard-list">Загрузка...</div>
     </div>
 
     <!-- NAV -->
     <div class="nav">
-        <div class="nav-item active" onclick="setTab('game', this)"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/></svg>Игра</div>
+        <div class="nav-item active" onclick="setTab('game', this)"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/></svg>Руль</div>
         <div class="nav-item" onclick="setTab('clans', this)"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Кланы</div>
         <div class="nav-item" onclick="setTab('business', this)"><svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h18c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>Бизнес</div>
         <div class="nav-item" onclick="setTab('shop', this)"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>Гараж</div>
@@ -180,8 +226,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v2_5_safe'; 
-        const OLD_KEYS = ['taxi_v2_4_clean', 'taxi_v2_2_donate', 'taxi_v2_0_lead'];
+        const SAVE_KEY = 'taxi_v2_6_design'; 
+        const OLD_KEYS = ['taxi_v2_5_safe', 'taxi_v2_4_clean', 'taxi_v1_9_final'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -203,13 +249,10 @@
             clanId: null, clanTag: null, clanEmoji: null
         };
 
-        // --- INIT ---
-        document.addEventListener('game-start', () => {
-            initGame();
-        });
+        // Cache for Clan Owner
+        let currentClanOwner = "";
 
-        function initGame() {
-            // Restore Save
+        function init() {
             if(localStorage.getItem(SAVE_KEY)) {
                 state = { ...state, ...JSON.parse(localStorage.getItem(SAVE_KEY)) };
             } else {
@@ -219,10 +262,10 @@
                 }
             }
 
-            // Passive Loops
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
                 if(inc>0){ state.money+=inc; updateUI(); }
+                document.getElementById('ui-income').innerText = "+"+inc+"/s";
             }, 1000);
 
             setInterval(() => {
@@ -234,156 +277,234 @@
 
             updateUI();
             
-            // Sync with DB if available
             if(window.dbInstance) {
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
-                else loadClansLeaderboard();
+                else loadClansLeaderboard(); // Preload for better UX
             }
         }
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
-        // --- GAMEPLAY ---
-        let isRunning=false, speed=0, progress=0, loop=null, bgOff=0;
+        // --- GAMEPLAY (ANTI-CHEAT) ---
+        let isRunning = false, speed = 0, progress = 0, loop = null, bgOff = 0;
+        let lastTapTime = 0, rapidTaps = 0, isOverheated = false;
+
         function action() {
-            if(isRunning) return;
-            if(state.fuel<=0) { if(state.money>=10){state.money-=10;state.fuel++;save();updateUI();} return; }
+            if(isRunning || isOverheated) return;
+            if(state.fuel <= 0) {
+                if(state.money>=10){state.money-=10;state.fuel++;save();updateUI();}
+                return;
+            }
             state.fuel--; state.lastRefill=Date.now();
-            isRunning=true; progress=0; speed=0; save(); updateUI();
+            isRunning = true; progress = 0; speed = 0;
+            save(); updateUI();
             
+            // Visual feedback
             const btn = document.getElementById('btn-act');
             btn.innerText = "🚖 ПОЕХАЛИ!";
             btn.style.background = "#333";
-
+            btn.style.transform = "scale(0.95)";
+            setTimeout(() => btn.style.transform = "scale(1)", 150);
+            
             loop = setInterval(() => {
-                speed*=0.96; if(speed<0.1)speed=0; progress+=speed*0.12;
-                bgOff-=speed*2;
-                document.getElementById('bg-back').style.backgroundPositionX=bgOff*0.5+'px';
-                document.getElementById('bg-road').style.backgroundPositionX=bgOff*2+'px';
-                document.getElementById('ui-speed').innerText=Math.floor(speed*20);
-                document.getElementById('ui-prog').style.width=Math.min(progress,100)+'%';
-                if(progress>=100) finish();
+                speed *= 0.96; if(speed<0.1) speed=0;
+                progress += speed * 0.12;
+                bgOff -= speed * 2;
+                document.getElementById('bg-back').style.backgroundPositionX = bgOff*0.5+'px';
+                document.getElementById('bg-road').style.backgroundPositionX = bgOff*2+'px';
+                document.getElementById('ui-speed').innerText = Math.floor(speed*20);
+                document.getElementById('ui-prog').style.width = Math.min(progress,100)+'%';
+                if(progress >= 100) finish();
             }, 50);
         }
 
         function tap(e) {
-            if(!isRunning) return;
-            let c = carsDB.find(x=>x.id===state.selected);
-            let p = c.power * (1+state.upgrades.click*0.1);
-            if(speed>5)p*=0.6; speed+=p; if(speed>9)speed=9;
+            if(!isRunning || isOverheated) return;
+            const now = Date.now();
+            if(now - lastTapTime < 80) rapidTaps++; else rapidTaps = Math.max(0, rapidTaps - 1);
+            lastTapTime = now;
+            if(rapidTaps > 8) { triggerOverheat(); return; }
+
+            let car = carsDB.find(x=>x.id===state.selected);
+            let p = car.power * (1 + state.upgrades.click*0.1);
+            if(speed>5) p*=0.6; speed += p; if(speed>9) speed=9;
             
             let cw = document.getElementById('car-wrap');
-            cw.style.transform="scale(0.95)";
-            setTimeout(()=>cw.style.transform="scale(1)",80);
-            
+            cw.style.transform = "scale(0.95)";
+            setTimeout(()=>cw.style.transform="scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
+
             if(e) {
                 let el = document.createElement('div');
-                el.className='pop-txt'; el.innerText="💨";
-                el.style.left=e.clientX+'px'; el.style.top=e.clientY+'px';
+                el.className = 'pop-txt'; el.innerText = "💨";
+                el.style.left = e.clientX+'px'; el.style.top = e.clientY+'px';
                 document.body.appendChild(el);
-                setTimeout(()=>el.remove(),600);
+                setTimeout(()=>el.remove(), 600);
             }
+        }
+
+        function triggerOverheat() {
+            isOverheated = true; speed = 0;
+            document.getElementById('overheat-msg').style.display = 'block';
+            document.getElementById('car-wrap').classList.add('overheated');
+            tg.HapticFeedback.notificationOccurred('error');
+            setTimeout(() => {
+                isOverheated = false;
+                document.getElementById('overheat-msg').style.display = 'none';
+                document.getElementById('car-wrap').classList.remove('overheated');
+            }, 3000);
         }
 
         function finish() {
             if(!isRunning) return;
-            clearInterval(loop); isRunning=false;
+            clearInterval(loop); isRunning = false;
             let c = carsDB.find(x=>x.id===state.selected);
             let earn = c.reward + Math.floor(Math.random()*20);
-            state.money+=earn; state.xp+=20;
+            state.money += earn; state.xp += 20;
             
             if(window.dbInstance && state.clanId) {
                 const { doc, updateDoc, increment } = window.dbMethods;
-                updateDoc(doc(window.dbInstance,"clans",state.clanId),{xp:increment(20)}).catch(()=>{});
+                updateDoc(doc(window.dbInstance, "clans", state.clanId), { xp: increment(20) }).catch(()=>{});
             }
+
             save(); updateUI(); syncUser();
             tg.HapticFeedback.notificationOccurred('success');
             
             const btn = document.getElementById('btn-act');
-            btn.innerText = "ВЗЯТЬ ЗАКАЗ";
-            btn.style.background = "var(--text-main)";
+            btn.innerText = "ПРИЕХАЛИ!";
+            btn.style.background = "var(--accent)";
+            setTimeout(() => { if(!isRunning) updateUI(); }, 1000);
         }
 
         // --- CLANS ---
         async function createClan() {
             if(!window.dbInstance) return alert("Нет сети");
-            const name=document.getElementById('inp-clan-name').value.trim();
-            const tag=document.getElementById('inp-clan-tag').value.trim().toUpperCase();
-            const emoji=document.getElementById('inp-clan-emoji').value.trim()||"🛡️";
-            if(name.length<3||tag.length<2||state.money<10000) return alert("Ошибка ввода или мало денег");
+            const name = document.getElementById('inp-clan-name').value.trim();
+            const tag = document.getElementById('inp-clan-tag').value.trim().toUpperCase();
+            const emoji = document.getElementById('inp-clan-emoji').value.trim() || "🛡️";
             
-            state.money-=10000;
-            const id="clan_"+Date.now();
+            if(name.length<3) return alert("Имя клана короткое");
+            if(tag.length<2) return alert("Тег короткий");
+            if(state.money < 10000) return alert("Нужно 10,000💰");
+
+            state.money -= 10000;
+            const clanId = "clan_" + Date.now();
             try {
                 const { setDoc, doc } = window.dbMethods;
-                await setDoc(doc(window.dbInstance,"clans",id),{name,tag,emoji,owner:myId,members:[myId],xp:state.xp});
-                state.clanId=id; state.clanTag=tag; state.clanEmoji=emoji;
+                await setDoc(doc(window.dbInstance, "clans", clanId), {
+                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp
+                });
+                state.clanId = clanId; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
-            } catch(e){}
+            } catch(e) { console.error(e); alert("Ошибка"); }
         }
 
-        async function joinClan(id,tag,emoji) {
+        async function joinClan(id, tag, emoji) {
             try {
                 const { updateDoc, doc, arrayUnion } = window.dbMethods;
-                await updateDoc(doc(window.dbInstance,"clans",id),{members:arrayUnion(myId)});
-                state.clanId=id; state.clanTag=tag; state.clanEmoji=emoji;
+                await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
+                state.clanId = id; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
-            } catch(e){}
+            } catch(e) {}
         }
 
         async function leaveClan() {
+            if(!state.clanId) return;
             try {
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
-                await updateDoc(doc(window.dbInstance,"clans",state.clanId),{members:arrayRemove(myId)});
-                state.clanId=null; state.clanTag=null;
-                save(); syncUser(); updateUI(); loadClansLeaderboard();
-            } catch(e){}
+                await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(myId) });
+                state.clanId = null; state.clanTag = null;
+                save(); syncUser(); updateUI(); loadClansLeaderboard(); // Go back to list
+            } catch(e) {}
         }
 
-        async function kickMember(id) {
-            if(!confirm("Кикнуть?")) return;
+        async function kickMember(targetId) {
+            if(!state.clanId || !window.dbInstance) return;
+            if(!confirm("Выгнать участника?")) return;
             try {
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
-                await updateDoc(doc(window.dbInstance,"clans",state.clanId),{members:arrayRemove(id)});
-                await updateDoc(doc(window.dbInstance,"players",id),{clanId:null,clanTag:null});
+                await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(targetId) });
+                await updateDoc(doc(window.dbInstance, "players", targetId), { clanId: null, clanTag: null });
+                alert("Игрок исключен.");
                 loadClanMembers();
-            } catch(e){}
+            } catch(e) { alert("Ошибка исключения"); console.error(e); }
         }
 
-        // --- DATA LOADERS ---
-        async function loadClansLeaderboard() {
-            if(!window.dbInstance) return;
-            const list = document.getElementById('clans-list-public');
+        // --- LOADERS & LEADERBOARD ---
+        let leadMode = 'players';
+        window.switchLead = function(mode) {
+            leadMode = mode;
+            document.getElementById('btn-lead-players').className = mode==='players' ? 'switch-btn active' : 'switch-btn';
+            document.getElementById('btn-lead-clans').className = mode==='clans' ? 'switch-btn active' : 'switch-btn';
+            loadLeaderboard();
+        }
+
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            if(!window.dbInstance) return list.innerHTML = "Нет сети";
             list.innerHTML = "Загрузка...";
+            
             try {
-                const { getDocs, collection, query, limit, orderBy } = window.dbMethods;
-                const q = query(collection(window.dbInstance,"clans"), orderBy("xp","desc"), limit(20));
+                const { getDocs, collection, query, orderBy, limit } = window.dbMethods;
+                const coll = leadMode === 'players' ? 'players' : 'clans';
+                const q = query(collection(window.dbInstance, coll), orderBy("xp", "desc"), limit(20));
                 const snap = await getDocs(q);
                 let html = ""; let r=1;
+                
                 snap.forEach(d => {
                     const dd = d.data();
-                    html += `<div class="list-card"><div style="flex:1"><b>[${dd.tag}] ${dd.name}</b><br><span style="font-size:12px">${dd.members.length} уч.</span></div><button class="shop-btn" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Вступить</button></div>`;
+                    if(leadMode === 'players') {
+                        let t = dd.clanTag ? ` <b style="color:var(--accent)">[${dd.clanTag}]</b>` : "";
+                        html += `
+                        <div class="clan-rank-row">
+                            <div class="rank-num">${r}.</div>
+                            <div style="flex:1"><b>${dd.name}</b>${t}</div>
+                            <b>${dd.xp} XP</b>
+                        </div>`;
+                    } else {
+                        // CLAN ROW WITH DESIGN RESTORED
+                        let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
+                        // Fix for undefined emoji in old clans
+                        let icon = dd.emoji || "🛡️"; 
+                        html += `
+                        <div class="clan-rank-row">
+                            <div class="rank-num">${r}.</div>
+                            <div class="clan-emoji-circle">${icon}</div>
+                            <div style="flex:1">
+                                <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
+                                <div style="font-size:11px; opacity:0.6">${dd.members ? dd.members.length : 0} уч.</div>
+                            </div>
+                            <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
+                            ${btn}
+                        </div>`;
+                    }
+                    r++;
                 });
-                list.innerHTML = html || "Нет кланов";
-            } catch(e) { list.innerHTML = "Ошибка"; }
+                list.innerHTML = html || "Список пуст";
+            } catch(e) { list.innerHTML = "Ошибка загрузки"; console.error(e); }
+        }
+
+        // Separate function for the "Clan -> Join" view
+        async function loadClansLeaderboard() {
+            switchLead('clans'); // Just reuse the main leaderboard logic for simplicity
         }
 
         async function loadClanData() {
             if(!window.dbInstance || !state.clanId) return;
             try {
                 const { getDoc, doc } = window.dbMethods;
-                const s = await getDoc(doc(window.dbInstance,"clans",state.clanId));
-                if(s.exists()){
-                    const d = s.data();
-                    window.currentClanOwner = d.owner;
-                    document.getElementById('ui-my-clan-tag').innerText=d.tag;
-                    document.getElementById('ui-my-clan-name').innerText=d.name;
-                    document.getElementById('ui-my-clan-icon').innerText=d.emoji;
-                    document.getElementById('ui-my-clan-xp').innerText=d.xp;
+                const snap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
+                if(snap.exists()) {
+                    const d = snap.data();
+                    currentClanOwner = d.owner;
+                    document.getElementById('ui-my-clan-tag').innerText = d.tag;
+                    document.getElementById('ui-my-clan-name').innerText = d.name;
+                    document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
+                    document.getElementById('ui-my-clan-xp').innerText = d.xp;
+                    if(state.clanTag!==d.tag){ state.clanTag=d.tag; save(); }
                 }
-            } catch(e){}
+            } catch(e) {}
         }
 
         async function loadClanMembers() {
@@ -391,48 +512,35 @@
             const list = document.getElementById('clan-members-list');
             try {
                 const { getDocs, collection, query, where } = window.dbMethods;
-                const q = query(collection(window.dbInstance,"players"), where("clanId","==",state.clanId));
+                const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
                 const snap = await getDocs(q);
-                let m=[]; snap.forEach(d=>{let p=d.data(); p.id=d.id; m.push(p)});
-                m.sort((a,b)=>b.xp-a.xp);
-                let html="";
-                m.forEach(x=>{
-                    let btn = (window.currentClanOwner===myId && x.id!==myId) ? `<button style="background:red;color:white;border:none;border-radius:5px;padding:2px 6px;margin-left:5px" onclick="kickMember('${x.id}')">X</button>` : "";
-                    html+=`<div class="list-card" style="padding:10px"><span>${x.name}</span><div style="display:flex;align-items:center"><b style="color:var(--accent)">${x.xp} XP</b>${btn}</div></div>`
+                let members = [];
+                snap.forEach(d => { let p = d.data(); p.id = d.id; members.push(p); });
+                members.sort((a,b) => b.xp - a.xp);
+
+                let html = "";
+                const isOwner = (currentClanOwner === myId);
+
+                members.forEach((m, i) => {
+                    let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
+                    let kickBtn = (isOwner && m.id !== myId) ? `<button class="kick-btn" onclick="kickMember('${m.id}')">❌</button>` : "";
+                    html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center">
+                        <div style="flex:1"><span>${medal} ${m.name}</span></div>
+                        <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp} XP</b>${kickBtn}</div>
+                    </div>`;
                 });
-                list.innerHTML=html;
-            } catch(e){}
+                list.innerHTML = html || "Список пуст";
+            } catch(e) { console.error(e); }
         }
 
         async function syncUser() {
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
-                await setDoc(doc(window.dbInstance,"players",myId),{name:myName,xp:state.xp,clanId:state.clanId||null,clanTag:state.clanTag||null},{merge:true});
+                await setDoc(doc(window.dbInstance, "players", myId), {
+                    name: myName, xp: state.xp, clanId: state.clanId||null, clanTag: state.clanTag||null
+                }, { merge: true });
             } catch(e){}
-        }
-
-        let leadMode = 'players';
-        window.switchLead = function(m) { leadMode=m; document.getElementById('btn-lead-players').className=m==='players'?'switch-btn active':'switch-btn'; document.getElementById('btn-lead-clans').className=m==='clans'?'switch-btn active':'switch-btn'; loadLeaderboard(); }
-
-        async function loadLeaderboard() {
-            const list = document.getElementById('leaderboard-list');
-            if(!window.dbInstance) return list.innerHTML="Нет сети";
-            list.innerHTML="Загрузка...";
-            try {
-                const { getDocs, collection, query, orderBy, limit } = window.dbMethods;
-                const c = leadMode==='players'?'players':'clans';
-                const q = query(collection(window.dbInstance,c), orderBy("xp","desc"), limit(20));
-                const snap = await getDocs(q);
-                let html=""; let r=1;
-                snap.forEach(d=>{
-                    const dd=d.data();
-                    if(leadMode==='players') html+=`<div class="list-card" style="padding:10px"><b style="width:20px">${r}.</b><span style="flex:1">${dd.name} ${dd.clanTag?`[${dd.clanTag}]`:''}</span><b>${dd.xp}</b></div>`;
-                    else html+=`<div class="list-card" style="padding:10px"><b style="width:20px">${r}.</b><span style="flex:1">[${dd.tag}] ${dd.name}</span><b>${dd.xp}</b></div>`;
-                    r++;
-                });
-                list.innerHTML=html;
-            } catch(e){ list.innerHTML="Ошибка загрузки"; }
         }
 
         // --- UI ---
@@ -440,13 +548,18 @@
             document.getElementById('ui-money').innerText = Math.floor(state.money);
             document.getElementById('ui-fuel').innerText = state.fuel;
             document.getElementById('ui-car').innerText = carsDB.find(x=>x.id===state.selected).emoji;
-            
+
             const tagEl = document.getElementById('ui-clan-tag');
-            if(state.clanTag){tagEl.style.display='block';tagEl.innerText="CLAN: ["+state.clanTag+"]";}
+            if(state.clanTag) { tagEl.style.display='block'; tagEl.innerText = "CLAN: [" + state.clanTag + "]"; } 
             else tagEl.style.display='none';
 
-            if(state.clanId){ document.getElementById('clan-view-none').style.display='none'; document.getElementById('clan-view-active').style.display='block'; }
-            else { document.getElementById('clan-view-none').style.display='block'; document.getElementById('clan-view-active').style.display='none'; }
+            if(state.clanId) {
+                document.getElementById('clan-view-none').style.display='none';
+                document.getElementById('clan-view-active').style.display='block';
+            } else {
+                document.getElementById('clan-view-none').style.display='block';
+                document.getElementById('clan-view-active').style.display='none';
+            }
 
             let shp = document.getElementById('shop-cars'); shp.innerHTML = '';
             carsDB.forEach(c => {
@@ -458,14 +571,21 @@
 
             document.getElementById('btn-hire-novice').innerText = (staffData.novice.c*(state.staff.novice+1))+"💰";
             document.getElementById('btn-hire-pro').innerText = (staffData.pro.c*(state.staff.pro+1))+"💰";
-            document.getElementById('btn-hire-expert').innerText = (staffData.expert.c*(state.staff.expert+1))+"💰";
             document.getElementById('btn-upg-tank').innerText = (500*(state.upgrades.tank+1))+"💰";
             document.getElementById('btn-upg-click').innerText = (1000*(state.upgrades.click+1))+"💰";
 
-            if(!isRunning) {
-                const btn = document.getElementById('btn-act'); btn.disabled=false;
-                if(state.fuel>0 && btn.innerText !== "🚖 ПОЕХАЛИ!") { btn.innerText="ВЗЯТЬ ЗАКАЗ"; btn.style.background="var(--text-main)"; }
-                else if (state.fuel<=0) { btn.innerText="ЗАПРАВКА (10💰)"; btn.style.background="var(--accent)"; }
+            if(!isRunning && !isOverheated) {
+                const btn = document.getElementById('btn-act');
+                btn.disabled = false;
+                if(state.fuel > 0) { 
+                    if(btn.innerText !== "🚖 ПОЕХАЛИ!") btn.innerText = "ВЗЯТЬ ЗАКАЗ";
+                    btn.style.background="var(--text-main)"; btn.style.color="var(--card-bg)"; 
+                } 
+                else { btn.innerText = "ЗАПРАВКА (10💰)"; btn.style.background="var(--accent)"; btn.style.color="black"; }
+            } else if (isOverheated) {
+                const btn = document.getElementById('btn-act');
+                btn.disabled = true;
+                btn.innerText = "ПЕРЕГРЕВ!";
             }
         }
 
@@ -481,18 +601,13 @@
             
             if(id==='clans') { 
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
-                else loadClansLeaderboard();
+                else { loadClansLeaderboard(); }
             }
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
 
-        // Запуск (ждём прогрузки скрипта)
-        if(document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => document.dispatchEvent(new Event('game-start')));
-        } else {
-            setTimeout(() => document.dispatchEvent(new Event('game-start')), 100);
-        }
+        init();
     </script>
 </body>
 </html>
