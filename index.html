@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Taxi Sim 0.1</title>
+    <!-- Подключаем скрипт Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            /* Используем переменные темы Telegram */
+            --bg-color: var(--tg-theme-bg-color, #212121);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --btn-color: var(--tg-theme-button-color, #3390ec);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #323232);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .car-container {
+            font-size: 80px;
+            margin: 20px 0;
+            transition: transform 0.3s;
+        }
+
+        .driving-anim {
+            animation: drive 0.5s infinite alternate;
+        }
+
+        @keyframes drive {
+            from { transform: translateY(0px) rotate(0deg); }
+            to { transform: translateY(-5px) rotate(2deg); }
+        }
+
+        .status-text {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #888;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: var(--secondary-bg);
+            border-radius: 5px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #f1c40f; /* Желтый цвет такси */
+            transition: width 0.1s linear;
+        }
+
+        .controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        button {
+            background-color: var(--btn-color);
+            color: var(--btn-text);
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            width: 100%;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upgrade-btn {
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div id="level">Уровень: 1</div>
+        <div id="balance">💰 0</div>
+    </div>
+
+    <div class="car-container" id="car">🚖</div>
+    
+    <div class="status-text" id="status">Свободен</div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <div class="controls">
+        <button id="driveBtn" onclick="startOrder()">🚏 Взять заказ</button>
+        <button id="upgradeBtn" class="upgrade-btn" onclick="upgradeCar()">🔧 Улучшить авто (100💰)</button>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Развернуть на весь экран
+
+        // Состояние игры
+        let gameState = {
+            balance: 0,
+            level: 1,
+            isDriving: false,
+            upgradeCost: 100
+        };
+
+        // Загрузка сохранений (если есть)
+        const savedData = localStorage.getItem('taxiSimSave');
+        if (savedData) {
+            gameState = JSON.parse(savedData);
+        }
+
+        // Элементы UI
+        const els = {
+            balance: document.getElementById('balance'),
+            level: document.getElementById('level'),
+            status: document.getElementById('status'),
+            car: document.getElementById('car'),
+            progress: document.getElementById('progress'),
+            driveBtn: document.getElementById('driveBtn'),
+            upgradeBtn: document.getElementById('upgradeBtn')
+        };
+
+        // Обновление UI
+        function updateUI() {
+            els.balance.innerText = `💰 ${gameState.balance}`;
+            els.level.innerText = `Уровень: ${gameState.level}`;
+            els.upgradeBtn.innerText = `🔧 Улучшить авто (${gameState.upgradeCost}💰)`;
+            
+            // Проверка доступности улучшения
+            if (gameState.balance >= gameState.upgradeCost && !gameState.isDriving) {
+                els.upgradeBtn.disabled = false;
+            } else {
+                els.upgradeBtn.disabled = true;
+            }
+            
+            // Сохранение
+            localStorage.setItem('taxiSimSave', JSON.stringify(gameState));
+        }
+
+        // Логика взятия заказа
+        function startOrder() {
+            if (gameState.isDriving) return;
+
+            gameState.isDriving = true;
+            tg.HapticFeedback.impactOccurred('light'); // Вибрация
+            
+            els.driveBtn.disabled = true;
+            els.upgradeBtn.disabled = true;
+            els.status.innerText = "Везем клиента...";
+            els.car.classList.add('driving-anim');
+
+            let progress = 0;
+            // Длительность поездки зависит от уровня (чем выше уровень, тем быстрее, но не менее 1 секунды)
+            const duration = Math.max(1000, 3000 - (gameState.level * 100)); 
+            const intervalTime = 50;
+            const step = 100 / (duration / intervalTime);
+
+            const timer = setInterval(() => {
+                progress += step;
+                els.progress.style.width = `${Math.min(progress, 100)}%`;
+
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    finishOrder();
+                }
+            }, intervalTime);
+        }
+
+        // Завершение заказа
+        function finishOrder() {
+            gameState.isDriving = false;
+            els.car.classList.remove('driving-anim');
+            els.status.innerText = "Заказ выполнен!";
+            els.progress.style.width = '0%';
+            
+            // Расчет награды: База 10 + (Уровень * 5)
+            const reward = 10 + (gameState.level * 5);
+            gameState.balance += reward;
+
+            tg.HapticFeedback.notificationOccurred('success'); // Вибрация успеха
+            
+            setTimeout(() => {
+                els.status.innerText = "Свободен";
+                els.driveBtn.disabled = false;
+                updateUI();
+            }, 500);
+            
+            updateUI();
+        }
+
+        // Логика улучшения
+        function upgradeCar() {
+            if (gameState.balance >= gameState.upgradeCost) {
+                gameState.balance -= gameState.upgradeCost;
+                gameState.level++;
+                gameState.upgradeCost = Math.floor(gameState.upgradeCost * 1.5);
+                tg.HapticFeedback.impactOccurred('medium');
+                updateUI();
+            }
+        }
+
+        // Первый рендер
+        updateUI();
+
+    </script>
+</body>
+</html>
