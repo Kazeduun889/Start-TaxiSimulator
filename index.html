@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi Premium 0.5</title>
+    <title>Taxi Clean 0.6</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-grad: radial-gradient(circle at center, #2b2b2b 0%, #000000 100%);
-            --card-bg: rgba(255, 255, 255, 0.08);
-            --accent: #f1c40f; /* Taxi Yellow */
-            --accent-glow: rgba(241, 196, 15, 0.4);
-            --text-main: #ffffff;
-            --text-sec: #888888;
-            --danger: #e74c3c;
-            --success: #2ecc71;
-            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            --bg-color: #F5F7FA; /* Светлый фон */
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-light: #9CA3AF;
+            --accent: #FFD600; /* Яркий желтый */
+            --accent-dark: #E6C200;
+            --danger: #EF4444;
+            --success: #10B981;
+            --shadow: 0 4px 20px rgba(0,0,0,0.05);
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, sans-serif;
         }
 
         body {
-            background: var(--bg-grad);
+            background-color: var(--bg-color);
             color: var(--text-main);
             font-family: var(--font);
             margin: 0;
@@ -32,40 +33,35 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- ВЕРХНЯЯ СТАТИСТИКА --- */
+        /* --- SVG ИКОНКИ --- */
+        .icon { width: 20px; height: 20px; fill: currentColor; }
+        .icon-lg { width: 28px; height: 28px; fill: currentColor; }
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ --- */
         .header {
+            padding: 15px 20px;
+            padding-top: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            padding-top: 25px;
-            z-index: 10;
         }
 
-        .stat-badge {
+        .stat-pill {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 8px 12px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-weight: 600;
+            box-shadow: var(--shadow);
+            font-weight: 700;
             font-size: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
         }
+        
+        .stat-pill.fuel { color: var(--text-main); }
+        .stat-pill.money { color: var(--text-main); }
 
-        .fuel-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--success);
-            border-radius: 50%;
-            box-shadow: 0 0 5px var(--success);
-        }
-        .fuel-dot.low { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
-
-        /* --- ЦЕНТРАЛЬНАЯ ЧАСТЬ (АВТО) --- */
+        /* --- ИГРОВАЯ ЗОНА --- */
         .stage {
             flex: 1;
             display: flex;
@@ -75,193 +71,222 @@
             position: relative;
         }
 
-        .car-wrapper {
+        .car-container {
             position: relative;
-            width: 200px;
-            height: 200px;
+            width: 180px;
+            height: 180px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: transform 0.1s;
+            /* Тень под машиной */
+            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.15));
         }
 
         .car-emoji {
-            font-size: 120px;
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
+            font-size: 110px;
             z-index: 2;
-            cursor: pointer;
-        }
-
-        /* Эффект скорости (круги) */
-        .speed-ring {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            opacity: 0;
-            transform: scale(0.5);
-            transition: all 0.2s;
         }
 
         .speedometer {
-            margin-top: 20px;
+            margin-top: 10px;
             text-align: center;
         }
         .speed-val {
-            font-size: 42px;
+            font-size: 48px;
             font-weight: 800;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: -1px;
-            text-shadow: 0 0 20px var(--accent-glow);
+            color: var(--text-main);
+            letter-spacing: -2px;
+            line-height: 1;
         }
         .speed-label {
             font-size: 12px;
-            color: var(--text-sec);
+            color: var(--text-light);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            font-weight: 600;
+            margin-top: 5px;
         }
 
-        /* --- ПРОГРЕСС БАР --- */
-        .progress-area {
+        /* --- ПРОГРЕСС --- */
+        .progress-wrapper {
             width: 85%;
             margin-bottom: 20px;
         }
-        .progress-track {
-            height: 6px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+        .progress-bg {
+            height: 8px;
+            background: #E5E7EB;
+            border-radius: 4px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
             width: 0%;
             background: var(--accent);
-            box-shadow: 0 0 15px var(--accent);
+            border-radius: 4px;
             transition: width 0.1s linear;
         }
+        .status-txt {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 8px;
+            font-weight: 500;
+        }
 
-        /* --- КНОПКИ УПРАВЛЕНИЯ --- */
+        /* --- КНОПКА ДЕЙСТВИЯ --- */
         .action-area {
             padding: 20px;
-            padding-bottom: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            background: linear-gradient(to top, #000 0%, transparent 100%);
+            background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
         }
 
         .main-btn {
             background: var(--accent);
             color: #000;
             border: none;
-            padding: 18px;
-            border-radius: 16px;
-            font-size: 18px;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 17px;
             font-weight: 700;
             width: 100%;
             cursor: pointer;
-            box-shadow: 0 5px 20px rgba(241, 196, 15, 0.3);
-            transition: transform 0.1s, opacity 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 214, 0, 0.4);
+            transition: transform 0.1s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         .main-btn:active { transform: scale(0.98); }
-        .main-btn:disabled { background: #333; color: #666; box-shadow: none; }
-
-        /* --- НАВИГАЦИЯ --- */
-        .nav {
-            display: flex;
-            background: #111;
-            padding-bottom: env(safe-area-inset-bottom); /* Для iPhone */
+        .main-btn:disabled { 
+            background: #E5E7EB; 
+            color: #9CA3AF; 
+            box-shadow: none; 
         }
+
+        /* --- НИЖНЯЯ НАВИГАЦИЯ (КРАСИВАЯ) --- */
+        .nav-bar {
+            background: var(--card-bg);
+            padding: 10px 20px;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+            border-top: 1px solid #F3F4F6;
+        }
+
         .nav-item {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
-            color: #555;
-            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-light);
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: color 0.2s;
+            width: 60px;
         }
-        .nav-item.active {
-            color: var(--accent);
-            background: rgba(255,255,255,0.03);
-        }
-        .nav-icon { font-size: 20px; display: block; margin-bottom: 4px; }
 
-        /* --- МАГАЗИН (Оверлей) --- */
+        .nav-item.active {
+            color: var(--text-main);
+        }
+        
+        /* Индикатор активной вкладки */
+        .nav-item.active svg {
+            fill: var(--accent);
+            transform: translateY(-2px);
+            filter: drop-shadow(0 4px 6px rgba(255, 214, 0, 0.3));
+        }
+        
+        .nav-item svg { transition: all 0.2s; }
+
+        /* --- МАГАЗИН --- */
         #shop-screen {
             display: none;
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 80px; /* Leave space for nav */
-            background: var(--bg-grad);
+            top: 0; left: 0; right: 0; bottom: 80px;
+            background: var(--bg-color);
             z-index: 20;
             padding: 20px;
             overflow-y: auto;
         }
-        .shop-header { font-size: 24px; font-weight: bold; margin-bottom: 20px; margin-top: 40px;}
+        .shop-title { font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; }
         
         .car-card {
             background: var(--card-bg);
-            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 16px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: var(--shadow);
         }
         .buy-btn {
-            background: #333;
-            color: white;
+            background: #F3F4F6;
+            color: var(--text-main);
             border: none;
-            padding: 10px 16px;
-            border-radius: 10px;
+            padding: 8px 14px;
+            border-radius: 8px;
             font-weight: 600;
+            font-size: 13px;
         }
-        .buy-btn.active { background: var(--accent); color: black; }
+        .buy-btn.highlight {
+            background: var(--text-main);
+            color: white;
+        }
 
-        /* --- Анимации --- */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        .floating { animation: float 3s ease-in-out infinite; }
-        
         /* Всплывающий текст */
         .pop-text {
             position: absolute;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 20px;
             pointer-events: none;
             animation: popUp 0.6s ease-out forwards;
+            opacity: 0;
         }
         @keyframes popUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-40px) scale(1.5); }
+            0% { opacity: 1; transform: translateY(0) scale(0.8); }
+            50% { opacity: 1; transform: translateY(-30px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1); }
         }
+
+        /* Анимация парения */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
 
     </style>
 </head>
 <body>
 
-    <!-- Статистика -->
+    <!-- SVG Definitions (hidden) -->
+    <svg style="display: none;">
+        <symbol id="icon-fuel" viewBox="0 0 24 24"><path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33a2.5 2.5 0 0 0 2.5 2.5c.36 0 .69-.08.98-.21V19h-2v-2h-2v2H6V6h5V4H6a2 2 0 0 0-2 2v16h10v-3h2v3h2a2 2 0 0 0 2-2V9c0-.69-.28-1.32-.73-1.77z"/></symbol>
+        <symbol id="icon-money" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.69 1.64 1.83 1.64.93 0 1.6-.46 1.6-1.22 0-.96-.75-1.21-2.03-1.5-1.53-.35-3.1-.88-3.1-2.9 0-1.54 1.15-2.6 2.89-2.93V6h2.67v1.93c1.38.35 2.82 1.34 3.01 3.12h-1.97c-.12-.87-.72-1.39-1.59-1.39-.77 0-1.46.4-1.46 1.14 0 .96.9 1.21 2.09 1.52 1.65.43 3 1.01 3 3.05.02 1.74-1.48 2.81-3.16 3.15z"/></symbol>
+        <symbol id="icon-wheel" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-2.48-.35-4.52-2.19-5.18-4.57l3.12-1.26c.38.33.86.55 1.4.63l.66 5.2zM8.32 8.64l-3.11-1.26c.76-2.28 2.76-4.01 5.18-4.32l.66 5.2a2.44 2.44 0 0 0-1.4.63l-1.33-.25zM12 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm2.08-5.36l.66-5.2c2.42.31 4.42 2.05 5.18 4.32l-3.11 1.26c-.46-.38-.85-.59-1.33-.25l-1.4-.13zM15.68 15.36l3.11 1.26c-.66 2.38-2.7 4.22-5.18 4.57l.66-5.2c.54-.08 1.02-.3 1.4-.63z"/></symbol>
+        <symbol id="icon-shop" viewBox="0 0 24 24"><path d="M21.9 8.89l-1.05-4.37c-.22-.9-1-1.52-1.91-1.52H5.06c-.91 0-1.69.62-1.91 1.52L2.1 8.89c-.24 1.02-.02 2.06.62 2.88.08.11.19.19.28.29V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6.94c.09-.09.2-.18.28-.29.64-.82.86-1.86.62-2.88zM6 13c-1.1 0-2-.9-2-2 0-.55.22-1.05.58-1.41L5.79 5h12.42l1.21 4.59c.36.36.58.86.58 1.41 0 1.1-.9 2-2 2s-2-.9-2-2V9h-2v2c0 1.1-.9 2-2 2s-2-.9-2-2V9H8v2c0 1.1-.9 2-2 2z"/></symbol>
+    </svg>
+
+    <!-- Header -->
     <div class="header">
-        <div class="stat-badge">
-            <span id="balance">0</span> 💰
+        <div class="stat-pill money">
+            <svg class="icon" style="color:#FFD600"><use xlink:href="#icon-money"></use></svg>
+            <span id="balance">0</span>
         </div>
-        <div class="stat-badge">
-            <div id="fuel-dot" class="fuel-dot"></div>
+        <div class="stat-pill fuel">
+            <svg class="icon" style="color:#10B981"><use xlink:href="#icon-fuel"></use></svg>
             <span id="fuel">10</span>/10
-            <span id="timer" style="font-size: 10px; color: #666; margin-left:5px"></span>
+            <span id="timer" style="font-size: 11px; color: #9CA3AF; margin-left:5px"></span>
         </div>
     </div>
 
-    <!-- Игровая сцена -->
+    <!-- Main View -->
     <div id="game-view" class="stage">
-        <div class="car-wrapper floating" id="car-wrap" onclick="tapCar(event)">
-            <div class="speed-ring" id="ring"></div>
+        <div class="car-container floating" id="car-wrap" onclick="tapCar(event)">
             <div class="car-emoji" id="car-emoji">🚖</div>
         </div>
 
@@ -270,35 +295,37 @@
             <div class="speed-label">km/h</div>
         </div>
 
-        <div style="flex:1"></div> <!-- Распорка -->
+        <div style="flex:1"></div>
 
-        <div class="progress-area">
-            <div class="progress-track">
+        <div class="progress-wrapper">
+            <div class="progress-bg">
                 <div class="progress-fill" id="progress"></div>
             </div>
-            <div id="status" style="text-align: center; font-size: 13px; color: #666; margin-top: 8px;">
-                Свободен
-            </div>
+            <div id="status" class="status-txt">Готов к поездке</div>
         </div>
 
         <div class="action-area">
-            <button id="main-btn" class="main-btn" onclick="takeOrder()">ВЗЯТЬ ЗАКАЗ</button>
+            <button id="main-btn" class="main-btn" onclick="takeOrder()">
+                <svg class="icon"><use xlink:href="#icon-wheel"></use></svg> ВЗЯТЬ ЗАКАЗ
+            </button>
         </div>
     </div>
 
-    <!-- Магазин -->
+    <!-- Shop View -->
     <div id="shop-screen">
-        <div class="shop-header">Гараж</div>
+        <div class="shop-title">Автопарк</div>
         <div id="shop-list"></div>
     </div>
 
-    <!-- Навигация -->
-    <div class="nav">
+    <!-- Bottom Nav -->
+    <div class="nav-bar">
         <div class="nav-item active" onclick="switchTab('game')">
-            <span class="nav-icon">🚖</span>Работа
+            <svg class="icon-lg"><use xlink:href="#icon-wheel"></use></svg>
+            <span>Работа</span>
         </div>
         <div class="nav-item" onclick="switchTab('shop')">
-            <span class="nav-icon">🏪</span>Гараж
+            <svg class="icon-lg"><use xlink:href="#icon-shop"></use></svg>
+            <span>Гараж</span>
         </div>
     </div>
 
@@ -306,57 +333,40 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- КОНФИГУРАЦИЯ ---
-        const SAVE_KEY = 'taxi_universal_save'; // Единый ключ сохранения
-        const REGEN_TIME = 60000; // 1 минута
+        const SAVE_KEY = 'taxi_universal_save'; 
+        const REGEN_TIME = 60000;
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
-            { id: 1, name: "Sedan", emoji: "🚖", price: 500, reward: 50, power: 1.3 },
+            { id: 1, name: "Comfort", emoji: "🚖", price: 500, reward: 50, power: 1.3 },
             { id: 2, name: "Sport", emoji: "🏎️", price: 2500, reward: 150, power: 1.8 },
-            { id: 3, name: "Super", emoji: "🚀", price: 10000, reward: 500, power: 2.5 }
+            { id: 3, name: "Luxury", emoji: "🚀", price: 10000, reward: 500, power: 2.5 }
         ];
 
-        // --- СОСТОЯНИЕ ---
         let state = {
             money: 0,
             fuel: 10,
             maxFuel: 10,
             lastRefill: Date.now(),
             owned: [0],
-            selected: 0,
-            level: 1
+            selected: 0
         };
 
-        // Переменные сессии
         let isDriving = false;
         let speed = 0;
         let progress = 0;
         let loop = null;
 
-        // --- СИСТЕМА СОХРАНЕНИЙ ---
         function loadGame() {
-            // 1. Пробуем загрузить основной сейв
             const data = localStorage.getItem(SAVE_KEY);
-            if (data) {
-                state = { ...state, ...JSON.parse(data) };
-            } 
-            // 2. Если его нет, ищем старые версии (миграция)
-            else if (localStorage.getItem('taxi_v4')) {
-                const old = JSON.parse(localStorage.getItem('taxi_v4'));
-                state.money = old.money || 0;
-                state.fuel = old.fuel || 10;
-                state.owned = old.owned || [0];
-                saveGame(); // Сразу сохраняем в новый формат
-            }
-
-            // Оффлайн реген бензина
-            const now = Date.now();
-            const passed = now - state.lastRefill;
+            if (data) state = { ...state, ...JSON.parse(data) };
+            
+            // Refill logic
+            const passed = Date.now() - state.lastRefill;
             const toRegen = Math.floor(passed / REGEN_TIME);
             if (toRegen > 0 && state.fuel < state.maxFuel) {
                 state.fuel = Math.min(state.maxFuel, state.fuel + toRegen);
-                state.lastRefill = now;
+                state.lastRefill = Date.now();
             }
         }
 
@@ -364,10 +374,8 @@
             localStorage.setItem(SAVE_KEY, JSON.stringify(state));
         }
 
-        // --- ГЕЙМПЛЕЙ ---
         function takeOrder() {
             if (state.fuel <= 0) {
-                // Покупка бензина
                 if (state.money >= 10) {
                     state.money -= 10;
                     state.fuel++;
@@ -375,7 +383,7 @@
                     updateUI();
                     tg.HapticFeedback.notificationOccurred('success');
                 } else {
-                    tg.showAlert("Нет денег на бензин (10💰)");
+                    tg.showAlert("Не хватает денег (10)");
                 }
                 return;
             }
@@ -387,67 +395,48 @@
             isDriving = true;
             progress = 0;
             speed = 0;
-            
-            // UI Update
-            document.getElementById('status').innerText = "Везем клиента...";
-            document.getElementById('status').style.color = "#f1c40f";
+
+            document.getElementById('status').innerText = "Набирай скорость!";
             document.getElementById('main-btn').innerText = "В ПУТИ";
             document.getElementById('main-btn').disabled = true;
-            document.getElementById('car-wrap').classList.remove('floating'); // Остановить парение
-            
+            document.getElementById('car-wrap').classList.remove('floating');
+
             loop = setInterval(gameLoop, 50);
             updateUI();
         }
 
         function gameLoop() {
-            // Физика: трение
-            speed *= 0.94; // Быстро падает
+            speed *= 0.94; // Трение
             if (speed < 0.1) speed = 0;
-
             progress += speed * 0.1;
 
-            // Визуал
             document.getElementById('speed').innerText = Math.floor(speed * 20);
             document.getElementById('progress').style.width = Math.min(progress, 100) + '%';
-            
-            // Кольцо эффекта
-            const ringScale = 0.5 + (speed / 5);
-            const ringOp = Math.min(speed / 3, 1);
-            document.getElementById('ring').style.transform = `scale(${ringScale})`;
-            document.getElementById('ring').style.opacity = ringOp;
 
-            if (progress >= 100) {
-                finishOrder();
-            }
+            if (progress >= 100) finishOrder();
         }
 
         function tapCar(e) {
             if (!isDriving) return;
-
             const car = carsDB.find(c => c.id === state.selected);
             
-            // Ускорение
             let boost = car.power;
-            if (speed > 5) boost *= 0.5; // Сложнее на высокой скорости
+            if (speed > 5) boost *= 0.6;
             speed += boost;
-            if (speed > 8) speed = 8; // Максимум
+            if (speed > 8) speed = 8;
 
-            // Анимация удара
             const wrap = document.getElementById('car-wrap');
             wrap.style.transform = 'scale(0.95)';
             setTimeout(() => wrap.style.transform = 'scale(1)', 50);
 
-            // Вибрация
-            tg.HapticFeedback.impactOccurred('medium');
-
-            // Всплывашка
+            tg.HapticFeedback.impactOccurred('light');
             if (e) showPop(e.clientX, e.clientY);
         }
 
         function showPop(x, y) {
             const el = document.createElement('div');
             el.className = 'pop-text';
-            el.innerText = '+' + Math.floor(Math.random()*5+10);
+            el.innerText = '+' + Math.floor(speed * 5);
             el.style.left = x + 'px';
             el.style.top = y + 'px';
             document.body.appendChild(el);
@@ -457,18 +446,14 @@
         function finishOrder() {
             clearInterval(loop);
             isDriving = false;
-            
             const car = carsDB.find(c => c.id === state.selected);
             state.money += car.reward;
             saveGame();
-
+            
             tg.HapticFeedback.notificationOccurred('success');
-            document.getElementById('status').innerText = "Приехали!";
-            document.getElementById('status').style.color = "#2ecc71";
-            document.getElementById('speed').innerText = "0";
-            document.getElementById('ring').style.opacity = 0;
+            document.getElementById('status').innerText = "Заказ выполнен!";
             document.getElementById('car-wrap').classList.add('floating');
-
+            
             setTimeout(() => {
                 if (!isDriving) {
                     document.getElementById('progress').style.width = '0%';
@@ -478,44 +463,31 @@
             updateUI();
         }
 
-        // --- ИНТЕРФЕЙС ---
         function updateUI() {
             document.getElementById('balance').innerText = state.money;
             document.getElementById('fuel').innerText = state.fuel;
             
-            const fuelDot = document.getElementById('fuel-dot');
-            if (state.fuel > 0) {
-                fuelDot.className = 'fuel-dot';
-            } else {
-                fuelDot.className = 'fuel-dot low';
-            }
-
-            // Кнопка
             const btn = document.getElementById('main-btn');
             if (!isDriving) {
                 if (state.fuel > 0) {
-                    btn.innerText = "ВЗЯТЬ ЗАКАЗ";
-                    btn.disabled = false;
+                    btn.innerHTML = `<svg class="icon"><use xlink:href="#icon-wheel"></use></svg> ВЗЯТЬ ЗАКАЗ`;
                     btn.style.background = "var(--accent)";
                     btn.style.color = "black";
-                    document.getElementById('status').innerText = "Готов к работе";
-                    document.getElementById('status').style.color = "#666";
+                    btn.disabled = false;
+                    document.getElementById('status').innerText = "Готов к поездке";
                 } else {
-                    btn.innerText = "КУПИТЬ БЕНЗИН (10💰)";
-                    btn.style.background = "#333";
+                    btn.innerHTML = `<svg class="icon"><use xlink:href="#icon-fuel"></use></svg> КУПИТЬ БЕНЗИН (10)`;
+                    btn.style.background = "#1F2937"; // Темно-серый для покупки
                     btn.style.color = "white";
                     btn.disabled = false;
-                    document.getElementById('status').innerText = "Бак пуст";
-                    document.getElementById('status').style.color = "var(--danger)";
+                    document.getElementById('status').innerText = "Нужна заправка";
                 }
             }
 
-            // Машина
             const curCar = carsDB.find(c => c.id === state.selected);
             document.getElementById('car-emoji').innerText = curCar.emoji;
         }
 
-        // Таймер топлива
         setInterval(() => {
             if (state.fuel < state.maxFuel) {
                 const left = REGEN_TIME - (Date.now() - state.lastRefill);
@@ -532,11 +504,9 @@
             }
         }, 1000);
 
-        // --- МАГАЗИН ---
         function renderShop() {
             const list = document.getElementById('shop-list');
             list.innerHTML = '';
-            
             carsDB.forEach(car => {
                 const isOwned = state.owned.includes(car.id);
                 const isSelected = state.selected === car.id;
@@ -544,22 +514,21 @@
                 const div = document.createElement('div');
                 div.className = 'car-card';
                 
-                let btnHtml = '';
-                if (isSelected) {
-                    btnHtml = `<button class="buy-btn active" disabled>Выбрано</button>`;
-                } else if (isOwned) {
-                    btnHtml = `<button class="buy-btn" onclick="selectCar(${car.id})">Выбрать</button>`;
-                } else {
+                let btnHtml;
+                if (isSelected) btnHtml = `<button class="buy-btn" disabled>Выбрано</button>`;
+                else if (isOwned) btnHtml = `<button class="buy-btn" onclick="selectCar(${car.id})">Взять</button>`;
+                else {
                     const canBuy = state.money >= car.price;
-                    btnHtml = `<button class="buy-btn" style="${canBuy ? 'background:white; color:black' : 'opacity:0.5'}" onclick="buyCar(${car.id})">${car.price}💰</button>`;
+                    const style = canBuy ? 'background:#1F2937; color:white' : 'opacity:0.5';
+                    btnHtml = `<button class="buy-btn" style="${style}" onclick="buyCar(${car.id})">${car.price}</button>`;
                 }
 
                 div.innerHTML = `
                     <div style="display:flex; align-items:center; gap:15px">
-                        <div style="font-size:32px">${car.emoji}</div>
+                        <div style="font-size:36px">${car.emoji}</div>
                         <div>
-                            <div style="font-weight:bold; font-size:16px">${car.name}</div>
-                            <div style="font-size:12px; color:#888">+${car.reward}💰 / Power: ${car.power}</div>
+                            <div style="font-weight:700; font-size:16px">${car.name}</div>
+                            <div style="font-size:12px; color:#9CA3AF">Награда: ${car.reward}</div>
                         </div>
                     </div>
                     ${btnHtml}
@@ -600,7 +569,6 @@
             }
         };
 
-        // Запуск
         loadGame();
         updateUI();
 
