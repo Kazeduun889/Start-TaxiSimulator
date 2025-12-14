@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 2.2 (Donations)</title>
+    <title>Taxi City Final</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -12,21 +12,21 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СВОИ КЛЮЧИ FIREBASE НИЖЕ 🔴
+        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
-  const firebaseConfig = {
-  apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
-  authDomain: "talinoos.firebaseapp.com",
-  projectId: "talinoos",
-  storageBucket: "talinoos.firebasestorage.app",
-  messagingSenderId: "1032846622090",
-  appId: "1:1032846622090:web:f9710a601bb8afcd305c73"
-};
+        const firebaseConfig = {
+            apiKey: "ВСТАВЬ_API_KEY",
+            authDomain: "xxxx.firebaseapp.com",
+            projectId: "xxxx",
+            storageBucket: "xxxx.appspot.com",
+            messagingSenderId: "xxxx",
+            appId: "xxxx"
+        };
         // ==================================================================
 
         try {
             if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
-                alert("Ошибка: Вставь ключи Firebase!");
+                alert("Вставь ключи Firebase в код index.html!");
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
@@ -41,8 +41,7 @@
             --text-main: #0F172A;
             --accent: #F59E0B;
             --card-bg: #FFFFFF;
-            --font: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            --gold: #FFD700;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
         }
         body.night-mode {
             --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%);
@@ -57,9 +56,11 @@
 
         /* UI */
         .hud-bar { position: absolute; top:0; left:0; right:0; padding:15px; z-index:50; display:flex; justify-content:space-between; pointer-events:none; }
-        .pill { background: rgba(255,255,255,0.2); backdrop-filter:blur(8px); padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; border:1px solid rgba(255,255,255,0.2); pointer-events:auto; }
+        .pill { background: rgba(255,255,255,0.2); backdrop-filter:blur(8px); padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; border:1px solid rgba(255,255,255,0.2); pointer-events:auto; display:flex; align-items:center; gap:5px; }
         
         .stage { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
+        .theme-toggle { position:absolute; top:60px; right:15px; width:35px; height:35px; background:rgba(0,0,0,0.3); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:50; }
+
         .city-layer { position:absolute; bottom:0; left:0; right:0; pointer-events:none; }
         .city-back { height:35%; background: linear-gradient(to top, #94A3B8 0%, transparent 100%); background-size:120px 100%; opacity:0.6; }
         .road { position:absolute; bottom:0; width:100%; height:90px; background:#334155; border-top:4px solid #FCD34D; z-index:5; }
@@ -86,20 +87,16 @@
         .header-title { font-size:28px; font-weight:900; margin-bottom:20px; }
         .list-card { background:var(--card-bg); padding:16px; border-radius:16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
         .shop-btn { background:rgba(128,128,128,0.1); border:none; padding:8px 16px; border-radius:10px; font-weight:700; color:var(--text-main); }
+        .shop-btn.active { background:var(--accent); color:black; }
         .clan-input { width:100%; padding:14px; border-radius:12px; border:1px solid #ccc; margin-bottom:10px; box-sizing:border-box; font-size:16px; }
         
-        .theme-toggle { position:absolute; top:60px; right:15px; width:35px; height:35px; background:rgba(0,0,0,0.3); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:50; }
         .pop-txt { position:absolute; font-weight:900; font-size:28px; color:var(--text-main); pointer-events:none; animation:flyUp 0.6s forwards; z-index:100; }
         @keyframes flyUp { 100% { opacity:0; transform:translateY(-80px) scale(1.5); } }
 
+        /* Leaderboard Switcher */
         .switch-box { display: flex; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 14px; margin-bottom: 20px; }
         .switch-btn { flex: 1; border: none; background: transparent; padding: 12px; border-radius: 10px; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; }
         .switch-btn.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-        /* DONATION CARDS */
-        .donate-card { background: linear-gradient(135deg, #FFD700 0%, #F59E0B 100%); color:black; border:none; }
-        .donate-card b { font-size: 18px; }
-        .donate-btn { background: black; color: white; border:none; padding: 8px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
         .nav { background:var(--card-bg); border-top:1px solid rgba(128,128,128,0.1); padding:8px 0; padding-bottom:env(safe-area-inset-bottom); display:flex; justify-content:space-around; z-index:100; }
         .nav-item { display:flex; flex-direction:column; align-items:center; width:60px; color:#94A3B8; font-size:10px; font-weight:600; }
@@ -114,7 +111,7 @@
 <body>
 
     <div class="hud-bar">
-        <div class="pill">💰 <span id="ui-money">0</span></div>
+        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
@@ -129,7 +126,6 @@
             <div id="overheat-msg" style="color:#EF4444; font-weight:900; display:none; animation:shake 0.5s">🔥 ПЕРЕГРЕВ!</div>
             <div class="progress-track"><div class="progress-fill" id="ui-prog"></div></div>
             <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:16px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
-            <div id="ui-vip-tag" style="display:none; color:#FFD700; font-weight:900; margin-top:4px; font-size:14px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">👑 VIP STATUS</div>
         </div>
 
         <div class="car-wrap" id="car-wrap" onclick="tap(event)">
@@ -138,38 +134,10 @@
         <div class="controls"><button id="btn-act" class="btn-main" onclick="action()">ВЗЯТЬ ЗАКАЗ</button></div>
     </div>
 
-    <!-- DONATE (NEW) -->
-    <div id="tab-donate" class="tab-screen">
-        <div class="header-title" style="color:#F59E0B">Магазин+ ⭐️</div>
-        <p style="font-size:13px; opacity:0.7; margin-bottom:20px">Покупки за Telegram Stars (Симуляция)</p>
-
-        <!-- VIP -->
-        <div class="list-card donate-card">
-            <div>
-                <b>👑 VIP Статус</b><br>
-                <span style="font-size:12px;">x2 Доход навсегда<br>Золотой ник</span>
-            </div>
-            <button class="donate-btn" onclick="buyDonate('vip')">100 ⭐️</button>
-        </div>
-
-        <!-- COINS -->
-        <div class="list-card">
-            <div style="font-size:30px; margin-right:10px">💰</div>
-            <div style="flex:1"><b>Мешок денег</b><br><span style="font-size:12px;opacity:0.7">+50,000 монет</span></div>
-            <button class="donate-btn" style="background:#0F172A" onclick="buyDonate('coins')">50 ⭐️</button>
-        </div>
-
-        <!-- EXCLUSIVE CAR -->
-        <div class="list-card">
-            <div style="font-size:30px; margin-right:10px">🏎️</div>
-            <div style="flex:1"><b>Tesla Gold</b><br><span style="font-size:12px;opacity:0.7">Скорость x3.0</span></div>
-            <button class="donate-btn" style="background:#0F172A" onclick="buyDonate('tesla')">250 ⭐️</button>
-        </div>
-    </div>
-
     <!-- CLANS -->
     <div id="tab-clans" class="tab-screen">
-        <div class="header-title">Кланы 🛡️</div>
+        <div class="header-title">Мой Клан 🛡️</div>
+
         <div id="clan-view-none">
             <div class="list-card" style="display:block; text-align:center;">
                 <h3>Создать Клан</h3>
@@ -181,20 +149,32 @@
                 <input type="text" id="inp-clan-tag" class="clan-input" placeholder="ТЕГ (3-4 буквы)" style="text-transform:uppercase" maxlength="4">
                 <button class="btn-main" onclick="createClan()">СОЗДАТЬ</button>
             </div>
-            <h3 style="margin-top:30px">Список Кланов</h3>
-            <div id="clans-list-public">Загрузка...</div>
+            <p style="text-align:center; margin-top:30px; opacity:0.6; font-size:14px">
+                Вступить в клан можно во вкладке <b>Топ -> Кланы</b>
+            </p>
         </div>
+
         <div id="clan-view-active" style="display:none">
             <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:16px; text-align:center; margin-bottom:20px;">
                 <div id="ui-my-clan-icon" style="font-size:50px; margin-bottom:10px">🛡️</div>
                 <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0; font-size:30px">TAG</h1>
                 <h2 id="ui-my-clan-name" style="margin:5px 0 0 0">Название</h2>
-                <div style="margin-top:10px; font-size:14px; opacity:0.8">XP Клана: <span id="ui-my-clan-xp" style="color:white; font-weight:bold">0</span></div>
+                <div style="margin-top:10px; font-size:14px; opacity:0.8">
+                    XP Клана: <span id="ui-my-clan-xp" style="color:white; font-weight:bold">0</span>
+                </div>
             </div>
-            <h3>Участники</h3>
+            <h3>Соклановцы</h3>
             <div id="clan-members-list" style="opacity:0.8">Загрузка...</div>
             <button class="btn-main" style="background:#EF4444; color:white; margin-top:20px" onclick="leaveClan()">ВЫЙТИ</button>
         </div>
+    </div>
+
+    <!-- BUSINESS -->
+    <div id="tab-business" class="tab-screen">
+        <div class="header-title">Таксопарк 💼</div>
+        <div class="list-card"><div style="font-size:28px; margin-right:10px">👦</div><div style="flex:1"><b>Новичок</b><br><span style="font-size:12px;opacity:0.7">+1$/сек</span></div><button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button></div>
+        <div class="list-card"><div style="font-size:28px; margin-right:10px">👨‍✈️</div><div style="flex:1"><b>Профи</b><br><span style="font-size:12px;opacity:0.7">+5$/сек</span></div><button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button></div>
+        <div class="list-card"><div style="font-size:28px; margin-right:10px">🤖</div><div style="flex:1"><b>Автопилот</b><br><span style="font-size:12px;opacity:0.7">+20$/сек</span></div><button class="shop-btn" id="btn-hire-expert" onclick="hire('expert')">15000💰</button></div>
     </div>
 
     <!-- SHOP -->
@@ -202,10 +182,8 @@
         <div class="header-title">Гараж</div>
         <div id="shop-cars"></div>
         <h3 style="margin:20px 0 10px">Тюнинг</h3>
-        <div class="list-card"><div><b>Бензобак+</b></div><button class="shop-btn" id="btn-upg-tank" onclick="upgrade('tank')">500💰</button></div>
-        <div class="list-card"><div><b>Турбо Клик</b></div><button class="shop-btn" id="btn-upg-click" onclick="upgrade('click')">1000💰</button></div>
-        <h3 style="margin:20px 0 10px">Бизнес</h3>
-        <div class="list-card"><div><b>Водитель</b> (+1$/с)</div><button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button></div>
+        <div class="list-card"><div><b>Бензобак+</b><br><span style="font-size:12px;opacity:0.7">+1 Литр</span></div><button class="shop-btn" id="btn-upg-tank" onclick="upgrade('tank')">500💰</button></div>
+        <div class="list-card"><div><b>Турбо Клик</b><br><span style="font-size:12px;opacity:0.7">+10% скорость</span></div><button class="shop-btn" id="btn-upg-click" onclick="upgrade('click')">1000💰</button></div>
     </div>
 
     <!-- LEADERBOARD -->
@@ -221,8 +199,8 @@
     <!-- NAV -->
     <div class="nav">
         <div class="nav-item active" onclick="setTab('game', this)"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/></svg>Руль</div>
-        <div class="nav-item" onclick="setTab('donate', this)"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Магазин+</div>
         <div class="nav-item" onclick="setTab('clans', this)"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Кланы</div>
+        <div class="nav-item" onclick="setTab('business', this)"><svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h18c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>Бизнес</div>
         <div class="nav-item" onclick="setTab('shop', this)"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>Гараж</div>
         <div class="nav-item" onclick="setTab('lead', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>Топ</div>
     </div>
@@ -231,16 +209,15 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v2_2_donate'; 
-        const OLD_KEYS = ['taxi_v2_0_lead', 'taxi_v1_9_final'];
+        const SAVE_KEY = 'taxi_v2_final_free'; 
+        const OLD_KEYS = ['taxi_v2_2_donate', 'taxi_v2_0_lead', 'taxi_v1_9_final'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
             { id: 1, name: "Comfort", emoji: "🚖", price: 1000, reward: 50, power: 1.3 },
             { id: 2, name: "Sport", emoji: "🏎️", price: 5000, reward: 150, power: 1.8 },
             { id: 3, name: "Luxury", emoji: "🚁", price: 20000, reward: 400, power: 2.5 },
-            // Donated Car
-            { id: 99, name: "Tesla Gold", emoji: "⚡", price: 99999999, reward: 1000, power: 3.0, exclusive: true }
+            { id: 99, name: "Tesla Gold", emoji: "⚡", price: 1000000, reward: 1000, power: 3.5 } // Теперь за деньги
         ];
         const staffData = { novice: {c:1000,i:1}, pro: {c:4000,i:5}, expert: {c:15000,i:20} };
 
@@ -253,8 +230,7 @@
         let state = {
             money: 0, xp: 0, fuel: 10, lastRefill: Date.now(), owned: [0], selected: 0,
             upgrades: { tank:0, click:0 }, staff: { novice:0, pro:0, expert:0 },
-            clanId: null, clanTag: null, clanEmoji: null,
-            isVip: false // NEW
+            clanId: null, clanTag: null, clanEmoji: null
         };
 
         function init() {
@@ -268,9 +244,9 @@
             }
 
             setInterval(() => {
-                let mult = state.isVip ? 2 : 1; // VIP Multiplier
-                let inc = (state.staff.novice*1 + state.staff.pro*5 + state.staff.expert*20) * mult;
+                let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
                 if(inc>0){ state.money+=inc; updateUI(); }
+                document.getElementById('ui-income').innerText = "+"+inc+"/s";
             }, 1000);
 
             setInterval(() => {
@@ -281,16 +257,17 @@
             }, 1000);
 
             updateUI();
+            
             if(window.dbInstance) {
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
-                else loadClansLeaderboard();
+                else loadLeaderboard(); 
             }
         }
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
-        // --- GAMEPLAY ---
+        // --- GAMEPLAY (ANTI-CHEAT) ---
         let isRunning = false, speed = 0, progress = 0, loop = null, bgOff = 0;
         let lastTapTime = 0, rapidTaps = 0, isOverheated = false;
 
@@ -357,40 +334,19 @@
             if(!isRunning) return;
             clearInterval(loop); isRunning = false;
             let c = carsDB.find(x=>x.id===state.selected);
-            let rewardMult = state.isVip ? 2 : 1; // VIP Bonus
-            let earn = (c.reward + Math.floor(Math.random()*20)) * rewardMult;
-            
+            let earn = c.reward + Math.floor(Math.random()*20);
             state.money += earn; state.xp += 20;
+            
             if(window.dbInstance && state.clanId) {
                 const { doc, updateDoc, increment } = window.dbMethods;
                 updateDoc(doc(window.dbInstance, "clans", state.clanId), { xp: increment(20) }).catch(()=>{});
             }
+
             save(); updateUI(); syncUser();
             tg.HapticFeedback.notificationOccurred('success');
             const btn = document.getElementById('btn-act');
             btn.innerText = "ПРИЕХАЛИ!";
             setTimeout(() => { if(!isRunning) updateUI(); }, 1000);
-        }
-
-        // --- DONATIONS ---
-        function buyDonate(item) {
-            // SIMULATION OF PAYMENT
-            if(!confirm("Это тестовая покупка (Бесплатно). Подтвердить?")) return;
-
-            if(item === 'coins') {
-                state.money += 50000;
-                tg.showAlert("Успешно! +50,000 монет");
-            }
-            if(item === 'vip') {
-                state.isVip = true;
-                tg.showAlert("VIP статус активирован! (Доход x2)");
-            }
-            if(item === 'tesla') {
-                if(!state.owned.includes(99)) state.owned.push(99);
-                state.selected = 99;
-                tg.showAlert("Tesla Gold получена!");
-            }
-            save(); updateUI(); syncUser();
         }
 
         // --- CLANS ---
@@ -431,35 +387,8 @@
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(myId) });
                 state.clanId = null; state.clanTag = null;
-                save(); syncUser(); updateUI(); loadClansLeaderboard();
+                save(); syncUser(); updateUI(); loadLeaderboard(); // Возврат к топу
             } catch(e) {}
-        }
-
-        async function loadClansLeaderboard() {
-            if(!window.dbInstance) return;
-            const list = document.getElementById('clans-list-public');
-            list.innerHTML = "Загрузка...";
-            try {
-                const { getDocs, collection, query, limit, orderBy } = window.dbMethods;
-                const q = query(collection(window.dbInstance, "clans"), orderBy("xp", "desc"), limit(20));
-                const snap = await getDocs(q);
-                let html = ""; let r=1;
-                snap.forEach(d => {
-                    const dd = d.data();
-                    html += `
-                    <div class="clan-rank-row">
-                        <div style="font-weight:bold; width:20px; color:#94A3B8">${r}.</div>
-                        <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
-                        <div style="flex:1">
-                            <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
-                            <div style="font-size:11px; opacity:0.6">${dd.members.length} участн.</div>
-                        </div>
-                        <div style="font-weight:bold; color:var(--accent)">${dd.xp} XP</div>
-                        ${(!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px; font-size:11px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : ''}
-                    </div>`; r++;
-                });
-                list.innerHTML = html || "Нет кланов";
-            } catch(e) { list.innerHTML = "Ошибка"; }
         }
 
         async function loadClanData() {
@@ -490,7 +419,7 @@
                 members.sort((a,b) => b.xp - a.xp);
                 let html = "";
                 members.forEach(m => {
-                    html += `<div class="list-card" style="padding:10px; margin-bottom:5px"><span>${m.name}</span><b style="color:var(--accent)">${m.xp} XP</b></div>`;
+                    html += `<div class="clan-rank-row"><span>${m.name}</span><b style="color:var(--accent)">${m.xp} XP</b></div>`;
                 });
                 list.innerHTML = html || "Список пуст";
             } catch(e) { list.innerHTML = "Ошибка списка"; }
@@ -501,12 +430,12 @@
             try {
                 const { setDoc, doc } = window.dbMethods;
                 await setDoc(doc(window.dbInstance, "players", myId), {
-                    name: myName, xp: state.xp, clanId: state.clanId||null, clanTag: state.clanTag||null,
-                    isVip: state.isVip // Sync VIP status
+                    name: myName, xp: state.xp, clanId: state.clanId||null, clanTag: state.clanTag||null
                 }, { merge: true });
             } catch(e){}
         }
 
+        // --- LEADERBOARD ---
         let leadMode = 'players';
         window.switchLead = function(mode) {
             leadMode = mode;
@@ -529,17 +458,21 @@
                     const dd = d.data();
                     if(leadMode === 'players') {
                         let t = dd.clanTag ? ` <b style="color:var(--accent)">[${dd.clanTag}]</b>` : "";
-                        let crown = dd.isVip ? "👑" : "";
-                        let nameStyle = dd.isVip ? "color:#FFD700" : "";
-                        html += `<div class="clan-rank-row"><div class="rank-num">${r}.</div><div style="flex:1"><b style="${nameStyle}">${dd.name} ${crown}</b>${t}</div><b>${dd.xp}XP</b></div>`;
+                        html += `<div class="clan-rank-row"><div class="rank-num">${r}.</div><div style="flex:1"><b>${dd.name}</b>${t}</div><b>${dd.xp}XP</b></div>`;
                     } else {
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
-                        html += `<div class="clan-rank-row"><div class="rank-num">${r}.</div><div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div><div style="flex:1"><b>[${dd.tag}] ${dd.name}</b><br><span style="font-size:10px">${dd.members.length} уч.</span></div><b>${dd.xp} XP</b>${btn}</div>`;
+                        html += `
+                        <div class="clan-rank-row">
+                            <div class="rank-num">${r}.</div>
+                            <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
+                            <div style="flex:1"><b>[${dd.tag}] ${dd.name}</b><br><span style="font-size:10px">${dd.members.length} уч.</span></div>
+                            <div style="text-align:right"><b style="color:var(--accent)">${dd.xp} XP</b><br>${btn}</div>
+                        </div>`;
                     }
                     r++;
                 });
                 list.innerHTML = html;
-            } catch(e) { list.innerHTML = "Ошибка"; }
+            } catch(e) { list.innerHTML = "Ошибка загрузки"; }
         }
 
         // --- UI ---
@@ -551,9 +484,6 @@
             const tagEl = document.getElementById('ui-clan-tag');
             if(state.clanTag) { tagEl.style.display='block'; tagEl.innerText = "CLAN: [" + state.clanTag + "]"; } 
             else tagEl.style.display='none';
-
-            // VIP Display
-            if(state.isVip) document.getElementById('ui-vip-tag').style.display='block';
 
             if(state.clanId) {
                 document.getElementById('clan-view-none').style.display='none';
@@ -568,7 +498,6 @@
                 let own = state.owned.includes(c.id);
                 let btn = own ? `<button class="shop-btn" onclick="state.selected=${c.id};save();updateUI()">Взять</button>` : `<button class="shop-btn" onclick="buyCar(${c.id})">${c.price}💰</button>`;
                 if(state.selected === c.id) btn = `<button class="shop-btn active">Выбрано</button>`;
-                if(c.exclusive && !own) btn = `<div style="font-size:10px; color:#F59E0B">Только в Магазин+</div>`;
                 shp.innerHTML += `<div class="list-card"><div style="font-size:24px;margin-right:10px">${c.emoji}</div><div style="flex:1"><b>${c.name}</b><br><span style="font-size:12px;opacity:0.7">+${c.reward}💰</span></div>${btn}</div>`;
             });
 
@@ -599,7 +528,10 @@
             document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
             if(id!=='game') document.getElementById('tab-'+id).classList.add('active');
             
-            if(id==='clans') { state.clanId ? (loadClanData(), loadClanMembers()) : loadClansLeaderboard(); }
+            if(id==='clans') { 
+                if(state.clanId) { loadClanData(); loadClanMembers(); }
+                else { loadLeaderboard(); }
+            }
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
