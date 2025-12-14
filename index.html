@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi Clans 1.5 (+Cheat)</title>
+    <title>Taxi City 1.6</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE MODULES -->
@@ -12,23 +12,29 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
+        // 🔴🔴🔴 ВНИМАНИЕ! ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴🔴🔴
         // ==================================================================
         const firebaseConfig = {
-            apiKey: "ТВОЙ_API_KEY",
-            authDomain: "xxxx.firebaseapp.com",
-            projectId: "xxxx",
-            storageBucket: "xxxx.appspot.com",
-            messagingSenderId: "xxxx",
-            appId: "xxxx"
-        };
+  apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
+  authDomain: "talinoos.firebaseapp.com",
+  projectId: "talinoos",
+  storageBucket: "talinoos.firebasestorage.app",
+  messagingSenderId: "1032846622090",
+  appId: "1:1032846622090:web:f9710a601bb8afcd305c73"
+};
         // ==================================================================
 
         try {
-            const app = initializeApp(firebaseConfig);
-            window.dbInstance = getFirestore(app);
-            window.dbMethods = { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where };
-            console.log("Firebase Connected");
+            // Проверка, вставил ли пользователь ключи
+            if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
+                console.error("⛔ ТЫ ЗАБЫЛ ВСТАВИТЬ КЛЮЧИ FIREBASE!");
+                alert("Ошибка: Вставь ключи Firebase в код index.html, иначе Топ и Кланы не будут работать!");
+            } else {
+                const app = initializeApp(firebaseConfig);
+                window.dbInstance = getFirestore(app);
+                window.dbMethods = { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where };
+                console.log("✅ Firebase Connected");
+            }
         } catch (e) {
             console.error("Firebase Error:", e);
         }
@@ -69,7 +75,7 @@
             background: rgba(255,255,255,0.2); backdrop-filter:blur(8px);
             padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px;
             border:1px solid rgba(255,255,255,0.2); box-shadow:0 4px 10px rgba(0,0,0,0.1);
-            pointer-events: auto; /* Чтобы кликать на деньги */
+            pointer-events: auto;
         }
 
         /* STAGE */
@@ -145,8 +151,7 @@
 <body>
 
     <div class="hud-bar">
-        <!-- 🔥 ЧИТ: onclick добавлен сюда -->
-        <div class="pill" onclick="devCheat()">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
+        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
@@ -184,7 +189,7 @@
                 <button class="btn-main" onclick="createClan()">СОЗДАТЬ</button>
             </div>
             <h3 style="margin-top:30px">Список Кланов</h3>
-            <div id="clans-list-public">Загрузка...</div>
+            <div id="clans-list-public">Загрузка списка...<br><small style="font-size:10px; color:red">Если долго грузится - проверь ключи Firebase!</small></div>
         </div>
 
         <div id="clan-view-active" style="display:none">
@@ -194,7 +199,7 @@
             </div>
             <h3>Участники</h3>
             <div id="clan-members-list">
-                <div style="text-align:center; padding:20px; opacity:0.6">Загрузка списка...</div>
+                <div style="text-align:center; padding:20px; opacity:0.6">Загрузка...</div>
             </div>
             <button class="btn-main" style="background:#EF4444; color:white; margin-top:20px" onclick="leaveClan()">ПОКИНУТЬ КЛАН</button>
         </div>
@@ -233,7 +238,7 @@
     <!-- LEADERBOARD -->
     <div id="tab-lead" class="tab-screen">
         <div class="header-title">Топ Мира 🌍</div>
-        <div id="leaderboard-list">Загрузка...</div>
+        <div id="leaderboard-list">Загрузка...<br><small style="font-size:10px; color:red">Если висит - проверь ключи Firebase!</small></div>
     </div>
 
     <!-- NAV -->
@@ -249,8 +254,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v1_5_clans'; 
-        const OLD_KEYS = ['taxi_v1_4_stable', 'taxi_clans_v1_3'];
+        const SAVE_KEY = 'taxi_v1_6_final'; // Обновленный ключ, данные мигрируют
+        const OLD_KEYS = ['taxi_v1_5_clans', 'taxi_v1_4_stable', 'taxi_clans_v1_3'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -274,6 +279,7 @@
         };
 
         function init() {
+            // Restore logic
             if(localStorage.getItem(SAVE_KEY)) {
                 state = { ...state, ...JSON.parse(localStorage.getItem(SAVE_KEY)) };
             } else {
@@ -297,6 +303,8 @@
             }, 1000);
 
             updateUI();
+            
+            // Если Firebase подключен, грузим данные
             if(window.dbInstance) {
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
@@ -481,7 +489,7 @@
 
         async function loadLeaderboard() {
             const list = document.getElementById('leaderboard-list');
-            if(!window.dbInstance) { list.innerHTML = "Нет сети"; return; }
+            if(!window.dbInstance) { list.innerHTML = "Нет сети или ключей Firebase"; return; }
             try {
                 const { getDocs, collection, query, orderBy, limit } = window.dbMethods;
                 const q = query(collection(window.dbInstance, "players"), orderBy("xp", "desc"), limit(20));
@@ -549,23 +557,11 @@
             document.querySelectorAll('.tab-screen').forEach(x=>x.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
             if(id!=='game') document.getElementById('tab-'+id).classList.add('active');
+            
             if(id==='clans') { state.clanId ? (loadClanData(), loadClanMembers()) : loadClansList(); }
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
-
-        // 🔥 ЧИТ: СЕКРЕТНАЯ КНОПКА (5 кликов по деньгам)
-        let devClicks = 0;
-        window.devCheat = function() {
-            devClicks++;
-            if(devClicks >= 5) {
-                state.money += 10000; state.xp += 1000;
-                save(); updateUI(); syncUser();
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert("РЕЖИМ БОГА: +10,000💰");
-                devClicks = 0;
-            }
-        }
 
         init();
     </script>
