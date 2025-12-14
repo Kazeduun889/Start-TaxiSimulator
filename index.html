@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi Clans 1.3</title>
+    <title>Taxi Stable 1.4</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- FIREBASE MODULES -->
+    <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ==================================================================
-        // 🔴🔴🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ С FIREBASE CONSOLE 🔴🔴🔴
-        // ==================================================================
-   const firebaseConfig = {
+        // ======================================================
+        // 🔴 ВСТАВЬ СВОИ КЛЮЧИ НИЖЕ, ИНАЧЕ КЛАНЫ НЕ БУДУТ РАБОТАТЬ
+        // ======================================================
+  const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -22,17 +22,13 @@
   messagingSenderId: "1032846622090",
   appId: "1:1032846622090:web:f9710a601bb8afcd305c73"
 };
-        // ==================================================================
+        // ======================================================
 
         try {
             const app = initializeApp(firebaseConfig);
             window.dbInstance = getFirestore(app);
-            // Делаем методы доступными глобально
             window.dbMethods = { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit };
-            console.log("Firebase Connected");
-        } catch (e) {
-            console.error("ОШИБКА FIREBASE: Вы забыли вставить ключи в код!", e);
-        }
+        } catch (e) { console.error("Firebase Config Error:", e); }
     </script>
 
     <style>
@@ -41,122 +37,70 @@
             --text-main: #0F172A;
             --accent: #F59E0B;
             --card-bg: #FFFFFF;
-            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            --font: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
             --road: #334155;
             --city-b: #94A3B8;
-            --city-f: #64748B;
         }
 
-        /* Night Mode */
         body.night-mode {
             --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%);
             --text-main: #F1F5F9;
             --card-bg: #1E293B;
             --road: #020617;
             --city-b: #334155;
-            --city-f: #1E293B;
         }
 
         body {
             background: var(--bg-grad); color: var(--text-main); font-family: var(--font);
             margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column;
             overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent;
-            transition: background 0.8s, color 0.8s;
+            transition: background 0.5s;
         }
 
-        /* --- HUD --- */
-        .hud-bar {
-            position: absolute; top:0; left:0; right:0; padding:15px; z-index:20;
-            display:flex; justify-content:space-between;
-        }
-        .pill {
-            background: rgba(255,255,255,0.2); backdrop-filter:blur(8px);
-            padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px;
-            border:1px solid rgba(255,255,255,0.2); box-shadow:0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        /* --- STAGE --- */
+        /* HUD */
+        .hud-bar { position: absolute; top:0; left:0; right:0; padding:15px; z-index:20; display:flex; justify-content:space-between; }
+        .pill { background: rgba(255,255,255,0.3); backdrop-filter:blur(8px); padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:5px; border:1px solid rgba(255,255,255,0.2); }
+        
+        /* GAME STAGE */
         .stage { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
-        
-        .theme-toggle {
-            position:absolute; top:60px; right:15px; width:30px; height:30px;
-            background:rgba(0,0,0,0.3); color:white; border-radius:50%;
-            display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:30;
-        }
+        .theme-toggle { position:absolute; top:60px; right:15px; width:30px; height:30px; background:rgba(0,0,0,0.3); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:30; }
 
-        .city-layer { position:absolute; bottom:0; left:0; right:0; pointer-events:none; transition: opacity 1s; }
+        .city-layer { position:absolute; bottom:0; left:0; right:0; pointer-events:none; }
         .city-back { height:35%; background: linear-gradient(to top, var(--city-b) 0%, transparent 100%); background-size:120px 100%; opacity:0.6; }
-        .city-front { height:18%; background: linear-gradient(to top, var(--city-f) 0%, transparent 100%); background-size:70px 100%; opacity:0.9; }
-        
-        .road {
-            position:absolute; bottom:0; width:100%; height:90px;
-            background:var(--road); border-top:4px solid #FCD34D; z-index:5;
-            transition: background 0.8s;
-        }
-        .road-marks {
-            position:absolute; top:45px; width:100%; height:4px;
-            background:repeating-linear-gradient(90deg, #fff 0 40px, transparent 0 80px);
-            opacity:0.4;
-        }
+        .road { position:absolute; bottom:0; width:100%; height:90px; background:var(--road); border-top:4px solid #FCD34D; z-index:5; }
+        .road-marks { position:absolute; top:45px; width:100%; height:4px; background:repeating-linear-gradient(90deg, #fff 0 40px, transparent 0 80px); opacity:0.4; }
 
-        /* Car & Info */
         .info-panel { position:absolute; top:80px; width:100%; text-align:center; z-index:10; }
-        .speed-val { font-size:56px; font-weight:900; }
-        .progress-track { width:220px; height:8px; background:rgba(128,128,128,0.3); margin:5px auto; border-radius:4px; overflow:hidden; }
-        .progress-fill { height:100%; width:0%; background:var(--accent); }
+        .speed-val { font-size:56px; font-weight:900; transition: transform 0.1s; }
+        .progress-track { width:220px; height:10px; background:rgba(128,128,128,0.3); margin:5px auto; border-radius:5px; overflow:hidden; }
+        .progress-fill { height:100%; width:0%; background:var(--accent); transition: width 0.1s linear; }
 
         .car-wrap { position:relative; z-index:10; align-self:center; margin-bottom:30px; transition:transform 0.1s; }
         .car-emoji { font-size:130px; filter:drop-shadow(0 15px 20px rgba(0,0,0,0.3)); }
-        
-        .headlights {
-            position:absolute; right:-60px; top:50px; width:180px; height:50px;
-            background: linear-gradient(90deg, rgba(255,255,200,0.4), transparent);
-            transform: rotate(10deg); filter:blur(15px); opacity:0; transition: opacity 1s;
-        }
-        body.night-mode .headlights { opacity:1; }
 
-        .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); transition: background 0.8s; }
+        .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
         .btn-main {
             width:100%; padding:18px; border:none; border-radius:16px;
             background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800;
-            cursor:pointer; box-shadow:0 8px 20px rgba(0,0,0,0.2);
+            cursor:pointer; box-shadow:0 8px 20px rgba(0,0,0,0.2); transition: transform 0.1s, opacity 0.2s;
         }
-        .btn-main:active { transform:scale(0.97); }
-        .btn-main:disabled { opacity:0.5; }
+        .btn-main:active { transform:scale(0.95); }
+        .btn-main:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
 
-        /* --- TABS --- */
+        /* TABS */
         .tab-screen { display:none; position:absolute; top:0; left:0; right:0; bottom:75px; background:var(--bg-grad); z-index:50; padding:20px; overflow-y:auto; }
         .tab-screen.active { display:block; }
-
+        
         .header-title { font-size:28px; font-weight:900; margin-bottom:20px; }
-        .list-card {
-            background:var(--card-bg); padding:16px; border-radius:16px; margin-bottom:12px;
-            display:flex; align-items:center; justify-content:space-between;
-            box-shadow:0 4px 10px rgba(0,0,0,0.05);
-        }
+        .list-card { background:var(--card-bg); padding:16px; border-radius:16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
         .shop-btn { background:rgba(128,128,128,0.1); border:none; padding:8px 16px; border-radius:10px; font-weight:700; color:var(--text-main); }
         .shop-btn.active { background:var(--accent); color:black; }
+        
+        .clan-input { width:100%; padding:12px; border-radius:12px; border:1px solid #ccc; margin-bottom:10px; box-sizing:border-box; }
 
-        /* Clan Specific */
-        .clan-input {
-            width:100%; padding:12px; border-radius:12px; border:1px solid #ccc;
-            margin-bottom:10px; box-sizing:border-box; font-size:16px;
-        }
-        .clan-hero {
-            background: var(--text-main); color: var(--card-bg);
-            padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 20px;
-        }
-
-        /* --- NAV --- */
-        .nav {
-            background:var(--card-bg); border-top:1px solid rgba(128,128,128,0.1);
-            padding:8px 0; padding-bottom:env(safe-area-inset-bottom);
-            display:flex; justify-content:space-around; z-index:100; transition: background 0.8s;
-        }
-        .nav-item {
-            display:flex; flex-direction:column; align-items:center; width:60px;
-            color:#94A3B8; font-size:10px; font-weight:600; gap:4px;
-        }
+        /* NAV */
+        .nav { background:var(--card-bg); border-top:1px solid rgba(128,128,128,0.1); padding:8px 0; padding-bottom:env(safe-area-inset-bottom); display:flex; justify-content:space-around; z-index:100; }
+        .nav-item { display:flex; flex-direction:column; align-items:center; width:60px; color:#94A3B8; font-size:10px; font-weight:600; }
         .nav-item.active { color:var(--accent); }
         .nav-item svg { width:24px; height:24px; fill:currentColor; }
 
@@ -165,18 +109,16 @@
 <body>
 
     <div class="hud-bar">
-        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px">+0/s</span></div>
+        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span></div>
     </div>
-
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
 
-    <!-- TAB: GAME -->
+    <!-- GAME -->
     <div id="tab-game" class="stage">
         <div class="city-layer city-back" id="bg-back"></div>
-        <div class="city-layer city-front" id="bg-front"></div>
         <div class="road"><div class="road-marks" id="bg-road"></div></div>
-
+        
         <div class="info-panel">
             <div class="speed-val"><span id="ui-speed">0</span></div>
             <div class="progress-track"><div class="progress-fill" id="ui-prog"></div></div>
@@ -184,42 +126,14 @@
         </div>
 
         <div class="car-wrap" id="car-wrap" onclick="tap(event)">
-            <div class="headlights"></div>
             <div class="car-emoji" id="ui-car">🚖</div>
         </div>
-
-        <div class="controls">
-            <button id="btn-act" class="btn-main" onclick="action()">ВЗЯТЬ ЗАКАЗ</button>
-        </div>
+        <div class="controls"><button id="btn-act" class="btn-main" onclick="action()">ВЗЯТЬ ЗАКАЗ</button></div>
     </div>
 
-    <!-- TAB: BUSINESS (DRIVERS) -->
-    <div id="tab-business" class="tab-screen">
-        <div class="header-title">Таксопарк 💼</div>
-        <p style="opacity:0.7; font-size:14px; margin-bottom:20px">Нанимай водителей для пассивного дохода.</p>
-        
-        <div class="list-card">
-            <div style="font-size:28px; margin-right:10px">👦</div>
-            <div style="flex:1"><b>Новичок</b><br><span style="font-size:12px;opacity:0.7">+1$/сек</span></div>
-            <button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button>
-        </div>
-        <div class="list-card">
-            <div style="font-size:28px; margin-right:10px">👨‍✈️</div>
-            <div style="flex:1"><b>Профи</b><br><span style="font-size:12px;opacity:0.7">+5$/сек</span></div>
-            <button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button>
-        </div>
-        <div class="list-card">
-            <div style="font-size:28px; margin-right:10px">🤖</div>
-            <div style="flex:1"><b>Автопилот</b><br><span style="font-size:12px;opacity:0.7">+20$/сек</span></div>
-            <button class="shop-btn" id="btn-hire-expert" onclick="hire('expert')">15000💰</button>
-        </div>
-    </div>
-
-    <!-- TAB: CLANS -->
+    <!-- CLANS -->
     <div id="tab-clans" class="tab-screen">
         <div class="header-title">Кланы 🛡️</div>
-
-        <!-- View: No Clan -->
         <div id="clan-view-none">
             <div class="list-card" style="display:block; text-align:center;">
                 <h3>Создать Клан</h3>
@@ -230,22 +144,29 @@
             <h3 style="margin-top:30px">Список Кланов</h3>
             <div id="clans-list-public">Загрузка...</div>
         </div>
-
-        <!-- View: In Clan -->
         <div id="clan-view-active" style="display:none">
-            <div class="clan-hero">
-                <h2 id="ui-my-clan-name" style="margin:0">Название</h2>
-                <div style="font-size:12px; opacity:0.8; margin-top:5px" id="ui-my-clan-mem">Участников: 0</div>
-            </div>
-            <h3>Соклановцы</h3>
-            <div id="clan-members-list" style="opacity:0.6; font-size:14px; text-align:center; padding:20px;">
-                Список доступен только в полной версии БД
-            </div>
-            <button class="btn-main" style="background:#EF4444; color:white; margin-top:20px" onclick="leaveClan()">ВЫЙТИ ИЗ КЛАНА</button>
+            <h2 id="ui-my-clan-name" style="text-align:center; margin-bottom:5px">Название</h2>
+            <div id="ui-my-clan-mem" style="text-align:center; margin-bottom:20px; opacity:0.7"></div>
+            <button class="btn-main" style="background:#EF4444; color:white;" onclick="leaveClan()">ВЫЙТИ ИЗ КЛАНА</button>
         </div>
     </div>
 
-    <!-- TAB: SHOP -->
+    <!-- BUSINESS -->
+    <div id="tab-business" class="tab-screen">
+        <div class="header-title">Таксопарк 💼</div>
+        <div class="list-card">
+            <div style="font-size:28px; margin-right:10px">👦</div>
+            <div style="flex:1"><b>Новичок</b><br><span style="font-size:12px;opacity:0.7">+1$/сек</span></div>
+            <button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button>
+        </div>
+        <div class="list-card">
+            <div style="font-size:28px; margin-right:10px">👨‍✈️</div>
+            <div style="flex:1"><b>Профи</b><br><span style="font-size:12px;opacity:0.7">+5$/сек</span></div>
+            <button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button>
+        </div>
+    </div>
+
+    <!-- SHOP -->
     <div id="tab-shop" class="tab-screen">
         <div class="header-title">Гараж</div>
         <div id="shop-cars"></div>
@@ -260,17 +181,17 @@
         </div>
     </div>
 
-    <!-- TAB: LEADERBOARD -->
+    <!-- LEAD -->
     <div id="tab-lead" class="tab-screen">
         <div class="header-title">Топ Мира 🌍</div>
         <div id="leaderboard-list">Загрузка...</div>
     </div>
 
-    <!-- NAVBAR -->
+    <!-- NAV -->
     <div class="nav">
         <div class="nav-item active" onclick="setTab('game', this)"><svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/></svg>Руль</div>
-        <div class="nav-item" onclick="setTab('business', this)"><svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h18c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>Бизнес</div>
         <div class="nav-item" onclick="setTab('clans', this)"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Кланы</div>
+        <div class="nav-item" onclick="setTab('business', this)"><svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h18c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>Бизнес</div>
         <div class="nav-item" onclick="setTab('shop', this)"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>Гараж</div>
         <div class="nav-item" onclick="setTab('lead', this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>Топ</div>
     </div>
@@ -279,16 +200,15 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Constants
-        const SAVE_KEY = 'taxi_clans_v1_3'; // Новый ключ
-        const OLD_KEY = 'taxi_tycoon_v1_2'; // Старый ключ для миграции
-        
+        // --- CONSTANTS ---
+        const SAVE_KEY = 'taxi_v1_4_stable'; // Новый ключ сохранения
+        const OLD_KEYS = ['taxi_clans_v1_3', 'taxi_tycoon_v1_2']; // Старые
+
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
             { id: 1, name: "Comfort", emoji: "🚖", price: 1000, reward: 50, power: 1.3 },
             { id: 2, name: "Sport", emoji: "🏎️", price: 5000, reward: 150, power: 1.8 },
-            { id: 3, name: "Luxury", emoji: "🚁", price: 20000, reward: 400, power: 2.5 },
-            { id: 4, name: "Cyber", emoji: "🛸", price: 100000, reward: 1000, power: 4.0 }
+            { id: 3, name: "Luxury", emoji: "🚁", price: 20000, reward: 400, power: 2.5 }
         ];
 
         const staffData = {
@@ -297,40 +217,40 @@
             expert: { cost: 15000, inc: 20 }
         };
 
-        // User
+        // --- USER ---
         const user = tg.initDataUnsafe.user;
         const myId = user ? user.id.toString() : "guest_" + Math.floor(Math.random()*9999);
         const myName = user ? user.first_name : "Игрок";
 
-        // State
+        // --- STATE ---
         let state = {
             money: 0, xp: 0, fuel: 10, lastRefill: Date.now(), owned: [0], selected: 0,
-            upgrades: { tank:0, click:0 },
-            staff: { novice:0, pro:0, expert:0 },
-            clanId: null
+            upgrades: { tank:0, click:0 }, staff: { novice:0, pro:0, expert:0 }, clanId: null
         };
 
-        // --- CORE ---
+        // --- INIT & MIGRATION ---
         function init() {
-            // MIGRATION Logic
+            // Restore Save
             if(localStorage.getItem(SAVE_KEY)) {
                 state = { ...state, ...JSON.parse(localStorage.getItem(SAVE_KEY)) };
-            } else if(localStorage.getItem(OLD_KEY)) {
-                // Если нет нового сейва, но есть старый - берем оттуда
-                const old = JSON.parse(localStorage.getItem(OLD_KEY));
-                state = { ...state, ...old }; // Переносим данные
-                state.clanId = null; // В старой версии кланов не было
-                save();
+            } else {
+                // Try Migration
+                for(let key of OLD_KEYS) {
+                    let old = localStorage.getItem(key);
+                    if(old) {
+                        try { state = { ...state, ...JSON.parse(old) }; } catch(e){}
+                    }
+                }
             }
 
-            // Passive loop
+            // Passive Loop
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
                 if(inc > 0) { state.money += inc; updateUI(); }
                 document.getElementById('ui-income').innerText = "+" + inc + "/s";
             }, 1000);
 
-            // Refill loop
+            // Fuel Loop
             setInterval(() => {
                 let max = 10 + state.upgrades.tank;
                 if(state.fuel < max && Date.now()-state.lastRefill > 60000) {
@@ -348,21 +268,31 @@
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
-        // --- GAMEPLAY ---
+        // --- GAMEPLAY (FIXED) ---
         let isRunning = false, speed = 0, progress = 0, loop = null, bgOff = 0;
 
         function action() {
+            if(isRunning) return; // FIX: Prevent double start
+
             if(state.fuel <= 0) {
                 if(state.money >= 10) { state.money-=10; state.fuel++; save(); updateUI(); }
                 return;
             }
+
             state.fuel--; state.lastRefill = Date.now();
             isRunning = true; progress = 0; speed = 0;
             save(); updateUI();
-            
+
+            const btn = document.getElementById('btn-act');
+            btn.disabled = true;
+            btn.innerText = "В ПУТИ...";
+
             loop = setInterval(() => {
-                speed *= 0.96; if(speed < 0.1) speed = 0;
+                speed *= 0.96;
+                if(speed < 0.1) speed = 0;
                 progress += speed * 0.12;
+
+                // Visuals
                 bgOff -= speed * 2;
                 document.getElementById('bg-front').style.backgroundPositionX = bgOff+'px';
                 document.getElementById('bg-back').style.backgroundPositionX = bgOff*0.5+'px';
@@ -370,6 +300,8 @@
                 
                 document.getElementById('ui-speed').innerText = Math.floor(speed*20);
                 document.getElementById('ui-prog').style.width = Math.min(progress,100)+'%';
+
+                // Check finish
                 if(progress >= 100) finish();
             }, 50);
         }
@@ -380,39 +312,50 @@
             let p = car.power * (1 + state.upgrades.click*0.1);
             if(speed>5) p*=0.6;
             speed += p; if(speed>9) speed=9;
-            
-            document.getElementById('car-wrap').style.transform = "scale(0.95)";
-            setTimeout(()=>document.getElementById('car-wrap').style.transform="scale(1)", 80);
+
+            let cw = document.getElementById('car-wrap');
+            cw.style.transform = "scale(0.95)";
+            setTimeout(()=>cw.style.transform="scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
         }
 
         function finish() {
-            clearInterval(loop); isRunning = false;
+            // FIX: Guard clause to prevent double execution
+            if(!isRunning) return;
+            
+            clearInterval(loop);
+            isRunning = false; 
+
             let c = carsDB.find(x=>x.id===state.selected);
             let earn = c.reward + Math.floor(Math.random()*20);
             state.money += earn; state.xp += 20;
+
             save(); updateUI(); syncUser();
             tg.HapticFeedback.notificationOccurred('success');
+
+            // Cooldown before button active again
+            const btn = document.getElementById('btn-act');
+            btn.innerText = "ПРИЕХАЛИ!";
+            setTimeout(() => {
+                updateUI(); // Reset button text via UpdateUI
+            }, 1000);
         }
 
-        // --- CLANS (FIREBASE) ---
+        // --- CLAN LOGIC ---
         async function createClan() {
-            if(!window.dbInstance) return tg.showAlert("Нет связи");
+            if(!window.dbInstance) return tg.showAlert("Нет сети");
             const name = document.getElementById('inp-clan').value.trim();
             if(name.length<3 || name.length>12) return tg.showAlert("Имя 3-12 букв");
             if(state.money < 10000) return tg.showAlert("Нужно 10,000💰");
 
             state.money -= 10000;
             const clanId = "clan_" + Date.now();
-
             try {
                 const { setDoc, doc } = window.dbMethods;
-                await setDoc(doc(window.dbInstance, "clans", clanId), {
-                    name: name, owner: myId, members: [myId], xp: state.xp
-                });
+                await setDoc(doc(window.dbInstance, "clans", clanId), { name, owner: myId, members: [myId], xp: state.xp });
                 state.clanId = clanId;
                 save(); syncUser(); updateUI(); loadClanData();
-            } catch(e) { console.error(e); tg.showAlert("Ошибка"); }
+            } catch(e) { console.error(e); }
         }
 
         async function joinClan(id) {
@@ -421,7 +364,7 @@
                 await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
                 state.clanId = id;
                 save(); syncUser(); updateUI(); loadClanData();
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
 
         async function leaveClan() {
@@ -431,7 +374,7 @@
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(myId) });
                 state.clanId = null;
                 save(); syncUser(); updateUI(); loadClansList();
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
 
         async function loadClansList() {
@@ -445,10 +388,10 @@
                 let html = "";
                 snap.forEach(d => {
                     const dd = d.data();
-                    html += `<div class="list-card"><div><b>${dd.name}</b><br><span style="font-size:12px;opacity:0.7">Участников: ${dd.members.length}</span></div><button class="shop-btn" onclick="joinClan('${d.id}')">Вступить</button></div>`;
+                    html += `<div class="list-card"><div><b>${dd.name}</b><br><span style="font-size:12px;opacity:0.7">Людей: ${dd.members.length}</span></div><button class="shop-btn" onclick="joinClan('${d.id}')">Вступить</button></div>`;
                 });
                 list.innerHTML = html || "Нет кланов";
-            } catch(e) {}
+            } catch(e) { list.innerHTML = "Ошибка"; }
         }
 
         async function loadClanData() {
@@ -459,20 +402,17 @@
                 if(snap.exists()) {
                     const d = snap.data();
                     document.getElementById('ui-my-clan-name').innerText = d.name;
-                    document.getElementById('ui-my-clan-mem').innerText = "Участников: " + d.members.length;
+                    document.getElementById('ui-my-clan-mem').innerText = "Людей: " + d.members.length;
                 }
             } catch(e) {}
         }
 
-        // --- SYNC ---
         async function syncUser() {
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
-                await setDoc(doc(window.dbInstance, "players", myId), {
-                    name: myName, xp: state.xp, clanId: state.clanId || null
-                }, { merge: true });
-            } catch(e) {}
+                await setDoc(doc(window.dbInstance, "players", myId), { name: myName, xp: state.xp, clanId: state.clanId||null }, { merge: true });
+            } catch(e){}
         }
 
         async function loadLeaderboard() {
@@ -485,21 +425,21 @@
                 let html = ""; let r=1;
                 snap.forEach(d => {
                     const dd = d.data();
-                    let tag = dd.clanId ? ` <span style="font-size:10px;background:#eee;padding:2px 4px;border-radius:3px">CLAN</span>` : "";
+                    let tag = dd.clanId ? ` <span style="font-size:10px;background:#eee;padding:2px">CLAN</span>` : "";
                     html += `<div class="list-card" style="margin-bottom:5px;padding:10px"><div style="width:20px;font-weight:bold;color:#aaa">${r}.</div><div style="flex:1"><b>${dd.name}</b>${tag}</div><div style="font-weight:bold;color:var(--accent)">${dd.xp}XP</div></div>`;
                     r++;
                 });
                 list.innerHTML = html;
-            } catch(e) {}
+            } catch(e){}
         }
 
-        // --- UI ---
+        // --- UI HELPER ---
         function updateUI() {
             document.getElementById('ui-money').innerText = Math.floor(state.money);
             document.getElementById('ui-fuel').innerText = state.fuel;
             document.getElementById('ui-car').innerText = carsDB.find(x=>x.id===state.selected).emoji;
-            
-            // Clan Badge
+
+            // Clan Views
             document.getElementById('ui-clan-tag').style.display = state.clanId ? 'block' : 'none';
             if(state.clanId) {
                 document.getElementById('clan-view-none').style.display = 'none';
@@ -509,7 +449,7 @@
                 document.getElementById('clan-view-active').style.display = 'none';
             }
 
-            // Shops
+            // Shops Render
             let shp = document.getElementById('shop-cars');
             shp.innerHTML = '';
             carsDB.forEach(c => {
@@ -518,13 +458,26 @@
                 if(state.selected === c.id) btn = `<button class="shop-btn active">Выбрано</button>`;
                 shp.innerHTML += `<div class="list-card"><div style="font-size:24px;margin-right:10px">${c.emoji}</div><div style="flex:1"><b>${c.name}</b><br><span style="font-size:12px;opacity:0.7">+${c.reward}💰</span></div>${btn}</div>`;
             });
-
+            
             document.getElementById('btn-hire-novice').innerText = (staffData.novice.cost*(state.staff.novice+1))+"💰";
             document.getElementById('btn-hire-pro').innerText = (staffData.pro.cost*(state.staff.pro+1))+"💰";
-            document.getElementById('btn-hire-expert').innerText = (staffData.expert.cost*(state.staff.expert+1))+"💰";
-            
             document.getElementById('btn-upg-tank').innerText = (500*(state.upgrades.tank+1))+"💰";
             document.getElementById('btn-upg-click').innerText = (1000*(state.upgrades.click+1))+"💰";
+
+            // Button Text (only if not running)
+            if(!isRunning) {
+                const btn = document.getElementById('btn-act');
+                btn.disabled = false;
+                if(state.fuel > 0) {
+                    btn.innerText = "ВЗЯТЬ ЗАКАЗ";
+                    btn.style.background = "var(--text-main)";
+                    btn.style.color = "var(--card-bg)";
+                } else {
+                    btn.innerText = "КУПИТЬ БЕНЗИН (10💰)";
+                    btn.style.background = "var(--accent)";
+                    btn.style.color = "black";
+                }
+            }
         }
 
         function buyCar(id) {
@@ -532,12 +485,12 @@
             if(state.money >= p) { state.money-=p; state.owned.push(id); state.selected=id; save(); updateUI(); }
         }
         function hire(t) {
-            let cost = staffData[t].cost * (state.staff[t]+1);
-            if(state.money >= cost) { state.money-=cost; state.staff[t]++; save(); updateUI(); }
+            let c = staffData[t].cost * (state.staff[t]+1);
+            if(state.money >= c) { state.money-=c; state.staff[t]++; save(); updateUI(); }
         }
         function upgrade(t) {
-            let cost = (t==='tank'?500:1000)*(state.upgrades[t]+1);
-            if(state.money >= cost) { state.money-=cost; state.upgrades[t]++; save(); updateUI(); }
+            let c = (t==='tank'?500:1000)*(state.upgrades[t]+1);
+            if(state.money >= c) { state.money-=c; state.upgrades[t]++; save(); updateUI(); }
         }
         function toggleTheme() { document.body.classList.toggle('night-mode'); }
 
@@ -548,7 +501,6 @@
             
             if(id === 'clans') { state.clanId ? loadClanData() : loadClansList(); }
             if(id === 'lead') loadLeaderboard();
-
             el.classList.add('active');
         };
 
