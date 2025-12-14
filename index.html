@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi Clans 1.5</title>
+    <title>Taxi Clans 1.5 (+Cheat)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE MODULES -->
@@ -12,16 +12,16 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ (ИНАЧЕ КЛАНЫ НЕ БУДУТ РАБОТАТЬ) 🔴
+        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
-   const firebaseConfig = {
-  apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
-  authDomain: "talinoos.firebaseapp.com",
-  projectId: "talinoos",
-  storageBucket: "talinoos.firebasestorage.app",
-  messagingSenderId: "1032846622090",
-  appId: "1:1032846622090:web:f9710a601bb8afcd305c73"
-};
+        const firebaseConfig = {
+            apiKey: "ТВОЙ_API_KEY",
+            authDomain: "xxxx.firebaseapp.com",
+            projectId: "xxxx",
+            storageBucket: "xxxx.appspot.com",
+            messagingSenderId: "xxxx",
+            appId: "xxxx"
+        };
         // ==================================================================
 
         try {
@@ -69,7 +69,7 @@
             background: rgba(255,255,255,0.2); backdrop-filter:blur(8px);
             padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px;
             border:1px solid rgba(255,255,255,0.2); box-shadow:0 4px 10px rgba(0,0,0,0.1);
-            pointer-events: auto;
+            pointer-events: auto; /* Чтобы кликать на деньги */
         }
 
         /* STAGE */
@@ -91,12 +91,9 @@
         .progress-track { width:220px; height:10px; background:rgba(128,128,128,0.3); margin:5px auto; border-radius:5px; overflow:hidden; }
         .progress-fill { height:100%; width:0%; background:var(--accent); }
 
-        /* CAR (TAP AREA) */
         .car-wrap { 
             position:relative; z-index:20; align-self:center; margin-bottom:30px; 
-            transition:transform 0.1s; cursor: pointer;
-            /* Увеличиваем область клика */
-            padding: 20px; margin-top: -20px; 
+            transition:transform 0.1s; cursor: pointer; padding: 20px; margin-top: -20px; 
         }
         .car-emoji { font-size:130px; filter:drop-shadow(0 15px 20px rgba(0,0,0,0.3)); pointer-events: none; }
 
@@ -127,7 +124,6 @@
             margin-bottom:10px; box-sizing:border-box; font-size: 16px;
         }
 
-        /* Pop Animation */
         .pop-txt {
             position: absolute; font-weight: 900; font-size: 28px; color: var(--text-main);
             pointer-events: none; animation: flyUp 0.6s forwards; z-index: 100;
@@ -149,7 +145,8 @@
 <body>
 
     <div class="hud-bar">
-        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
+        <!-- 🔥 ЧИТ: onclick добавлен сюда -->
+        <div class="pill" onclick="devCheat()">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:10px;color:#10B981;margin-left:5px"></span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
@@ -162,11 +159,9 @@
         <div class="info-panel">
             <div class="speed-val"><span id="ui-speed">0</span></div>
             <div class="progress-track"><div class="progress-fill" id="ui-prog"></div></div>
-            <!-- Clan Tag Display -->
             <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:16px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
         </div>
 
-        <!-- CAR (CLICKABLE) -->
         <div class="car-wrap" id="car-wrap" onclick="tap(event)">
             <div class="car-emoji" id="ui-car">🚖</div>
         </div>
@@ -180,7 +175,6 @@
     <div id="tab-clans" class="tab-screen">
         <div class="header-title">Кланы 🛡️</div>
 
-        <!-- Create / Search -->
         <div id="clan-view-none">
             <div class="list-card" style="display:block; text-align:center;">
                 <h3>Создать Клан</h3>
@@ -193,18 +187,15 @@
             <div id="clans-list-public">Загрузка...</div>
         </div>
 
-        <!-- Active Clan -->
         <div id="clan-view-active" style="display:none">
             <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:16px; text-align:center; margin-bottom:20px;">
                 <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0; font-size:40px">TAG</h1>
                 <h2 id="ui-my-clan-name" style="margin:5px 0 0 0">Название</h2>
             </div>
-            
             <h3>Участники</h3>
             <div id="clan-members-list">
                 <div style="text-align:center; padding:20px; opacity:0.6">Загрузка списка...</div>
             </div>
-
             <button class="btn-main" style="background:#EF4444; color:white; margin-top:20px" onclick="leaveClan()">ПОКИНУТЬ КЛАН</button>
         </div>
     </div>
@@ -279,11 +270,10 @@
         let state = {
             money: 0, xp: 0, fuel: 10, lastRefill: Date.now(), owned: [0], selected: 0,
             upgrades: { tank:0, click:0 }, staff: { novice:0, pro:0, expert:0 }, 
-            clanId: null, clanTag: null // New Field
+            clanId: null, clanTag: null
         };
 
         function init() {
-            // Restore
             if(localStorage.getItem(SAVE_KEY)) {
                 state = { ...state, ...JSON.parse(localStorage.getItem(SAVE_KEY)) };
             } else {
@@ -293,7 +283,6 @@
                 }
             }
 
-            // Loops
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
                 if(inc>0){ state.money+=inc; updateUI(); }
@@ -351,13 +340,11 @@
             if(speed>5) p*=0.6;
             speed += p; if(speed>9) speed=9;
             
-            // Anim
             let cw = document.getElementById('car-wrap');
             cw.style.transform = "scale(0.95)";
             setTimeout(()=>cw.style.transform="scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
 
-            // Pop
             if(e) {
                 let el = document.createElement('div');
                 el.className = 'pop-txt'; el.innerText = "💨";
@@ -381,7 +368,7 @@
             setTimeout(() => { if(!isRunning) updateUI(); }, 1000);
         }
 
-        // --- CLANS LOGIC ---
+        // --- CLANS ---
         async function createClan() {
             if(!window.dbInstance) return tg.showAlert("Нет сети");
             const name = document.getElementById('inp-clan-name').value.trim();
@@ -409,7 +396,7 @@
                 const { updateDoc, doc, arrayUnion } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
                 state.clanId = id;
-                state.clanTag = tag; // Save tag locally
+                state.clanTag = tag; 
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
             } catch(e) {}
         }
@@ -425,7 +412,6 @@
             } catch(e) {}
         }
 
-        // Fetch List of all clans
         async function loadClansList() {
             if(!window.dbInstance) return;
             const list = document.getElementById('clans-list-public');
@@ -438,10 +424,7 @@
                 snap.forEach(d => {
                     const dd = d.data();
                     html += `<div class="list-card">
-                        <div>
-                            <b>[${dd.tag}] ${dd.name}</b><br>
-                            <span style="font-size:12px;opacity:0.7">Людей: ${dd.members.length}</span>
-                        </div>
+                        <div><b>[${dd.tag}] ${dd.name}</b><br><span style="font-size:12px;opacity:0.7">Людей: ${dd.members.length}</span></div>
                         <button class="shop-btn" onclick="joinClan('${d.id}', '${dd.tag}')">Вступить</button>
                     </div>`;
                 });
@@ -449,7 +432,6 @@
             } catch(e) { list.innerHTML = "Ошибка загрузки"; }
         }
 
-        // Fetch Info about MY clan
         async function loadClanData() {
             if(!window.dbInstance || !state.clanId) return;
             try {
@@ -459,20 +441,17 @@
                     const d = snap.data();
                     document.getElementById('ui-my-clan-tag').innerText = d.tag;
                     document.getElementById('ui-my-clan-name').innerText = d.name;
-                    // Update local tag if changed
                     if(state.clanTag !== d.tag) { state.clanTag = d.tag; save(); }
                 }
             } catch(e) {}
         }
 
-        // Fetch List of Members in MY clan
         async function loadClanMembers() {
             if(!window.dbInstance || !state.clanId) return;
             const list = document.getElementById('clan-members-list');
             list.innerHTML = "Загрузка...";
             try {
                 const { getDocs, collection, query, where } = window.dbMethods;
-                // Query players where clanId == myClanId
                 const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
                 const snap = await getDocs(q);
                 let html = "";
@@ -486,25 +465,20 @@
                 list.innerHTML = html || "Список пуст";
             } catch(e) {
                 console.error(e);
-                list.innerHTML = "Ошибка загрузки (Нужен индекс в Firebase)"; 
+                list.innerHTML = "Ошибка загрузки (нужен индекс)"; 
             }
         }
 
-        // --- SYNC USER ---
         async function syncUser() {
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
                 await setDoc(doc(window.dbInstance, "players", myId), {
-                    name: myName, 
-                    xp: state.xp, 
-                    clanId: state.clanId || null,
-                    clanTag: state.clanTag || null
+                    name: myName, xp: state.xp, clanId: state.clanId || null, clanTag: state.clanTag || null
                 }, { merge: true });
             } catch(e){}
         }
 
-        // --- LEADERBOARD ---
         async function loadLeaderboard() {
             const list = document.getElementById('leaderboard-list');
             if(!window.dbInstance) { list.innerHTML = "Нет сети"; return; }
@@ -533,16 +507,10 @@
             document.getElementById('ui-fuel').innerText = state.fuel;
             document.getElementById('ui-car').innerText = carsDB.find(x=>x.id===state.selected).emoji;
 
-            // Clan Tag on Game Screen
             const tagEl = document.getElementById('ui-clan-tag');
-            if(state.clanTag) {
-                tagEl.style.display = 'block';
-                tagEl.innerText = "CLAN: [" + state.clanTag + "]";
-            } else {
-                tagEl.style.display = 'none';
-            }
+            if(state.clanTag) { tagEl.style.display = 'block'; tagEl.innerText = "CLAN: [" + state.clanTag + "]"; } 
+            else { tagEl.style.display = 'none'; }
 
-            // Clan Views
             if(state.clanId) {
                 document.getElementById('clan-view-none').style.display = 'none';
                 document.getElementById('clan-view-active').style.display = 'block';
@@ -551,9 +519,7 @@
                 document.getElementById('clan-view-active').style.display = 'none';
             }
 
-            // Shops
-            let shp = document.getElementById('shop-cars');
-            shp.innerHTML = '';
+            let shp = document.getElementById('shop-cars'); shp.innerHTML = '';
             carsDB.forEach(c => {
                 let own = state.owned.includes(c.id);
                 let btn = own ? `<button class="shop-btn" onclick="state.selected=${c.id};save();updateUI()">Взять</button>` : `<button class="shop-btn" onclick="buyCar(${c.id})">${c.price}💰</button>`;
@@ -569,11 +535,8 @@
             if(!isRunning) {
                 const btn = document.getElementById('btn-act');
                 btn.disabled = false;
-                if(state.fuel > 0) {
-                    btn.innerText = "ВЗЯТЬ ЗАКАЗ"; btn.style.background="var(--text-main)"; btn.style.color="var(--card-bg)";
-                } else {
-                    btn.innerText = "ЗАПРАВКА (10💰)"; btn.style.background="var(--accent)"; btn.style.color="black";
-                }
+                if(state.fuel > 0) { btn.innerText = "ВЗЯТЬ ЗАКАЗ"; btn.style.background="var(--text-main)"; btn.style.color="var(--card-bg)"; } 
+                else { btn.innerText = "ЗАПРАВКА (10💰)"; btn.style.background="var(--accent)"; btn.style.color="black"; }
             }
         }
 
@@ -586,11 +549,23 @@
             document.querySelectorAll('.tab-screen').forEach(x=>x.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
             if(id!=='game') document.getElementById('tab-'+id).classList.add('active');
-            
-            if(id==='clans') { if(state.clanId){ loadClanData(); loadClanMembers(); } else loadClansList(); }
+            if(id==='clans') { state.clanId ? (loadClanData(), loadClanMembers()) : loadClansList(); }
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
+
+        // 🔥 ЧИТ: СЕКРЕТНАЯ КНОПКА (5 кликов по деньгам)
+        let devClicks = 0;
+        window.devCheat = function() {
+            devClicks++;
+            if(devClicks >= 5) {
+                state.money += 10000; state.xp += 1000;
+                save(); updateUI(); syncUser();
+                tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert("РЕЖИМ БОГА: +10,000💰");
+                devClicks = 0;
+            }
+        }
 
         init();
     </script>
