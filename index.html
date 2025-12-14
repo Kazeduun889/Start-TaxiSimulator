@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 1.6</title>
+    <title>Taxi City 1.7 (Admin)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- FIREBASE MODULES -->
+    <!-- FIREBASE MODULES (Добавил deleteDoc) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴🔴🔴 ВНИМАНИЕ! ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴🔴🔴
+        // 🔴 ВСТАВЬ СВОИ КЛЮЧИ FIREBASE НИЖЕ 🔴
         // ==================================================================
-        const firebaseConfig = {
+    const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -25,19 +25,16 @@
         // ==================================================================
 
         try {
-            // Проверка, вставил ли пользователь ключи
             if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
                 console.error("⛔ ТЫ ЗАБЫЛ ВСТАВИТЬ КЛЮЧИ FIREBASE!");
-                alert("Ошибка: Вставь ключи Firebase в код index.html, иначе Топ и Кланы не будут работать!");
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
-                window.dbMethods = { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where };
+                // Добавил deleteDoc в список методов
+                window.dbMethods = { doc, setDoc, getDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where };
                 console.log("✅ Firebase Connected");
             }
-        } catch (e) {
-            console.error("Firebase Error:", e);
-        }
+        } catch (e) { console.error("Firebase Error:", e); }
     </script>
 
     <style>
@@ -189,7 +186,7 @@
                 <button class="btn-main" onclick="createClan()">СОЗДАТЬ</button>
             </div>
             <h3 style="margin-top:30px">Список Кланов</h3>
-            <div id="clans-list-public">Загрузка списка...<br><small style="font-size:10px; color:red">Если долго грузится - проверь ключи Firebase!</small></div>
+            <div id="clans-list-public">Загрузка...</div>
         </div>
 
         <div id="clan-view-active" style="display:none">
@@ -238,7 +235,7 @@
     <!-- LEADERBOARD -->
     <div id="tab-lead" class="tab-screen">
         <div class="header-title">Топ Мира 🌍</div>
-        <div id="leaderboard-list">Загрузка...<br><small style="font-size:10px; color:red">Если висит - проверь ключи Firebase!</small></div>
+        <div id="leaderboard-list">Загрузка...</div>
     </div>
 
     <!-- NAV -->
@@ -254,7 +251,10 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v1_6_final'; // Обновленный ключ, данные мигрируют
+        // 👮‍♂️ АДМИН-ПАНЕЛЬ: Впиши сюда свой ID (из @userinfobot)
+        const ADMIN_ID = "1562788488"; 
+
+        const SAVE_KEY = 'taxi_v1_6_final'; 
         const OLD_KEYS = ['taxi_v1_5_clans', 'taxi_v1_4_stable', 'taxi_clans_v1_3'];
 
         const carsDB = [
@@ -304,7 +304,6 @@
 
             updateUI();
             
-            // Если Firebase подключен, грузим данные
             if(window.dbInstance) {
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
@@ -489,7 +488,7 @@
 
         async function loadLeaderboard() {
             const list = document.getElementById('leaderboard-list');
-            if(!window.dbInstance) { list.innerHTML = "Нет сети или ключей Firebase"; return; }
+            if(!window.dbInstance) { list.innerHTML = "Нет сети"; return; }
             try {
                 const { getDocs, collection, query, orderBy, limit } = window.dbMethods;
                 const q = query(collection(window.dbInstance, "players"), orderBy("xp", "desc"), limit(20));
@@ -557,11 +556,32 @@
             document.querySelectorAll('.tab-screen').forEach(x=>x.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
             if(id!=='game') document.getElementById('tab-'+id).classList.add('active');
-            
             if(id==='clans') { state.clanId ? (loadClanData(), loadClanMembers()) : loadClansList(); }
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
+
+        // --- 🛡️ ADMIN PANEL (Консоль) ---
+        // Вызов в консоли: adminDeleteClan("clan_ID")
+        window.adminDeleteClan = async function(clanId) {
+            if(myId !== ADMIN_ID) return alert("❌ ДОСТУП ЗАПРЕЩЕН!");
+            if(!window.dbInstance) return alert("Нет БД");
+            
+            const { doc, getDoc, updateDoc, deleteDoc } = window.dbMethods;
+            try {
+                const snap = await getDoc(doc(window.dbInstance, "clans", clanId));
+                if(!snap.exists()) return alert("Клан не найден");
+                const mems = snap.data().members || [];
+                
+                // 1. Чистим игроков
+                for(let m of mems) {
+                    await updateDoc(doc(window.dbInstance, "players", m), { clanId: null, clanTag: null });
+                }
+                // 2. Удаляем клан
+                await deleteDoc(doc(window.dbInstance, "clans", clanId));
+                alert(`✅ Клан ${clanId} удален, ${mems.length} игроков освобождены.`);
+            } catch(e) { console.error(e); alert("Ошибка удаления"); }
+        }
 
         init();
     </script>
