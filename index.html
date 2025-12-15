@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 3.2 (Fix)</title>
+    <title>Taxi City 3.3 (Clan Fix)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -12,9 +12,9 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СВОИ КЛЮЧИ НИЖЕ 🔴
+        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ НИЖЕ 🔴
         // ==================================================================
-    const firebaseConfig = {
+   const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -108,18 +108,15 @@
         .clan-emoji-circle { width:35px; height:35px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
         .kick-btn { background: #fee2e2; color: #ef4444; border:none; padding: 6px 10px; border-radius: 8px; font-weight:bold; font-size: 10px; margin-left: auto; cursor: pointer; }
         
-        /* NOTICE */
-        .clan-notice { 
-            background: #FEF3C7; color: #92400E; padding: 12px; border-radius: 12px; 
-            margin-bottom: 20px; font-size: 13px; border: 1px solid #FCD34D; 
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .edit-notice-btn { font-size: 16px; cursor: pointer; background:none; border:none; }
-
-        /* Clan Level Bar */
+        /* Clan Level & Treasury & Notice */
         .clan-lvl-bar { width: 100%; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; margin-top: 5px; overflow: hidden; }
         .clan-lvl-fill { height: 100%; background: #10B981; width: 0%; transition: width 0.3s; }
         .treasury-box { background: rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; margin-top: 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center; }
+        
+        .notice-board { background:#FEF3C7; padding:10px; border-radius:12px; border:1px solid #FCD34D; font-size:13px; color:#92400E; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; }
+        .edit-pen { cursor:pointer; font-size:16px; margin-left:10px; border:none; background:none;}
+        
+        .settings-btn { background:rgba(0,0,0,0.1); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -171,39 +168,33 @@
         <div id="clan-view-active" style="display:none">
             
             <!-- NOTICE BOARD -->
-            <div id="ui-clan-notice-box" class="clan-notice" style="display:none">
-                <div>📢 <span id="ui-clan-notice-text">Добро пожаловать!</span></div>
-                <button id="btn-edit-notice" class="edit-notice-btn" onclick="editNotice()">✏️</button>
+            <div id="ui-clan-notice-box" class="notice-board" style="display:none">
+                <span id="ui-clan-notice">📢 Добро пожаловать!</span>
+                <button id="btn-edit-notice" class="edit-pen" onclick="editNotice()">✏️</button>
             </div>
 
             <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:16px; text-align:center; margin-bottom:20px;">
                 <div style="display:flex; justify-content:space-between; align-items:start">
                     <div id="ui-my-clan-icon" style="font-size:40px;">🛡️</div>
-                    <div style="text-align:right">
-                        <div style="font-size:12px; opacity:0.7">УРОВЕНЬ</div>
-                        <div style="font-size:24px; font-weight:900; color:var(--accent)" id="ui-clan-level">1</div>
+                    <div>
+                        <!-- SETTINGS BUTTON FOR OWNER -->
+                        <button id="btn-clan-settings" class="settings-btn" style="display:none" onclick="openClanSettings()">⚙️</button>
                     </div>
                 </div>
                 
                 <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0; font-size:30px; margin-top:-10px">TAG</h1>
                 <h2 id="ui-my-clan-name" style="margin:5px 0 0 0">Название</h2>
+                <div style="font-size:12px; opacity:0.7; margin-top:5px">Уровень <span id="ui-clan-level">1</span></div>
                 
-                <!-- Level Progress -->
-                <div style="margin-top:15px; text-align:left">
-                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px; opacity:0.8">
-                        <span>XP: <span id="ui-my-clan-xp">0</span></span>
-                        <span>След: <span id="ui-clan-next-xp">10000</span></span>
-                    </div>
-                    <div class="clan-lvl-bar"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
+                <div class="clan-lvl-bar" style="margin-top:10px"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
+                <div style="font-size:10px; display:flex; justify-content:space-between; margin-top:3px; opacity:0.6">
+                    <span id="ui-my-clan-xp">0 XP</span>
+                    <span id="ui-clan-next-xp">10k</span>
                 </div>
 
-                <!-- Treasury -->
                 <div class="treasury-box">
-                    <div>
-                        🏦 Казна:<br>
-                        <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰
-                    </div>
-                    <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
+                    <div>🏦 Казна: <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰</div>
+                    <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">+1000</button>
                 </div>
             </div>
 
@@ -211,7 +202,7 @@
                 <h3>Участники</h3>
                 <div style="display:flex; align-items:center; gap:10px">
                     <span style="font-size:12px; opacity:0.6" id="ui-clan-members-count">0/5</span>
-                    <button class="shop-btn" style="padding:4px 8px; font-size:12px" onclick="loadClanMembers()">🔄 Обновить</button>
+                    <button class="shop-btn" style="padding:4px 8px; font-size:12px" onclick="loadClanMembers()">🔄</button>
                 </div>
             </div>
             
@@ -260,8 +251,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v3_2_stable'; 
-        const OLD_KEYS = ['taxi_v2_9_final', 'taxi_v2_8_full'];
+        const SAVE_KEY = 'taxi_v3_3_fix'; 
+        const OLD_KEYS = ['taxi_v3_2_stable', 'taxi_v2_9_final'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -293,7 +284,6 @@
                     if(d) { state = {...state, ...JSON.parse(d)}; break; }
                 }
             }
-            if(state.selected === 99) state.selected = 0;
 
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
@@ -310,6 +300,7 @@
             updateUI();
             
             if(window.dbInstance) {
+                // Ensure user exists even if 0 XP
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
                 else loadClansLeaderboard();
@@ -318,9 +309,8 @@
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
-        // --- GAMEPLAY (ANTI-CHEAT) ---
-        let isRunning = false, speed = 0, progress = 0, loop = null, bgOff = 0;
-        let lastTapTime = 0, rapidTaps = 0, isOverheated = false;
+        // --- GAMEPLAY ---
+        let isRunning=false, speed=0, progress=0, loop=null, bgOff=0, lastTapTime=0, rapidTaps=0, isOverheated=false;
 
         function action() {
             if(isRunning || isOverheated) return;
@@ -415,7 +405,7 @@
             try {
                 const { setDoc, doc } = window.dbMethods;
                 await setDoc(doc(window.dbInstance, "clans", clanId), {
-                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp, money: 0, notice: "Добро пожаловать!"
+                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp, money: 0, notice: "Всем привет!"
                 });
                 state.clanId = clanId; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
@@ -425,7 +415,6 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
-                // Check limit
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
@@ -437,9 +426,7 @@
                 await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
                 state.clanId = id; state.clanTag = tag; state.clanEmoji = emoji;
                 
-                // FORCE SYNC
                 await syncUser();
-                
                 save(); updateUI(); loadClanData(); loadClanMembers();
             } catch(e) { alert("Ошибка вступления"); }
         }
@@ -473,16 +460,24 @@
                 loadClanData(); 
             } catch(e) {}
         }
-
+        
         async function editNotice() {
             if(currentClanOwner !== myId) return;
-            const txt = prompt("Новое объявление:");
-            if(txt) {
-                try {
-                    const { doc, updateDoc } = window.dbMethods;
-                    await updateDoc(doc(window.dbInstance, "clans", state.clanId), { notice: txt });
-                    loadClanData();
-                } catch(e){}
+            const t = prompt("Новое объявление:");
+            if(t) {
+                 const { doc, updateDoc } = window.dbMethods;
+                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { notice: t });
+                 loadClanData();
+            }
+        }
+        
+        async function openClanSettings() {
+            // Simple prompts for editing name/tag for owner
+            let newName = prompt("Новое имя клана:");
+            if(newName) {
+                const { doc, updateDoc } = window.dbMethods;
+                await updateDoc(doc(window.dbInstance, "clans", state.clanId), { name: newName });
+                loadClanData();
             }
         }
 
@@ -536,47 +531,50 @@
                     document.getElementById('ui-my-clan-name').innerText = d.name;
                     document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
                     document.getElementById('ui-my-clan-xp').innerText = xp;
-                    
                     document.getElementById('ui-clan-level').innerText = lvl;
                     document.getElementById('ui-clan-money').innerText = d.money || 0;
                     document.getElementById('ui-clan-next-xp').innerText = nextXp;
                     document.getElementById('ui-clan-xp-bar').style.width = Math.min(progress, 100) + "%";
                     document.getElementById('ui-clan-members-count').innerText = `${d.members.length}/${maxMembers}`;
-
-                    // Notice
+                    
+                    // Notice Logic
                     if(d.notice) {
-                        document.getElementById('ui-clan-notice-box').style.display = "flex";
-                        document.getElementById('ui-clan-notice-text').innerText = d.notice;
+                        document.getElementById('ui-clan-notice-box').style.display='flex';
+                        document.getElementById('ui-clan-notice').innerText = "📢 " + d.notice;
                     }
-                    if(currentClanOwner === myId) document.getElementById('btn-edit-notice').style.display = "block";
-                    else document.getElementById('btn-edit-notice').style.display = "none";
+                    if(currentClanOwner === myId) {
+                         document.getElementById('btn-edit-notice').style.display='block';
+                         document.getElementById('btn-clan-settings').style.display='block';
+                    } else {
+                         document.getElementById('btn-edit-notice').style.display='none';
+                         document.getElementById('btn-clan-settings').style.display='none';
+                    }
 
                     if(state.clanTag!==d.tag){ state.clanTag=d.tag; save(); }
                 }
             } catch(e) {}
         }
 
-        // --- FIXED CLAN MEMBERS LOADER ---
+        // --- NEW MEMBER LOADING LOGIC (FIX FOR 0 XP) ---
         async function loadClanMembers() {
             if(!window.dbInstance || !state.clanId) return;
             const list = document.getElementById('clan-members-list');
-            list.innerHTML = `<div style="text-align:center; padding:20px">Загрузка...</div>`;
-            
             try {
-                const { getDoc, doc, where, query, collection, getDocs } = window.dbMethods;
+                const { getDocs, collection, query, where } = window.dbMethods;
                 
-                // 1. Get Clan to get member IDs
-                // Using 'where clanId == ...' is safer than 'in' for unlimited members
+                // Get all players with this clanId
                 const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
                 const snap = await getDocs(q);
                 
                 let members = [];
                 snap.forEach(d => { 
-                    let p = d.data(); p.id = d.id; 
+                    let p = d.data(); p.id = d.id;
+                    // IF XP IS UNDEFINED, TREAT AS 0
+                    if(p.xp === undefined || p.xp === null) p.xp = 0;
                     members.push(p); 
                 });
 
-                members.sort((a,b) => (b.xp||0) - (a.xp||0));
+                members.sort((a,b) => b.xp - a.xp);
 
                 let html = "";
                 const isOwner = (currentClanOwner === myId);
@@ -587,25 +585,23 @@
                     
                     html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center">
                         <div style="flex:1"><span>${medal} ${m.name}</span></div>
-                        <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp||0} XP</b>${kickBtn}</div>
+                        <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp} XP</b>${kickBtn}</div>
                     </div>`;
                 });
                 list.innerHTML = html || "Список пуст";
-            } catch(e) { 
-                console.error(e);
-                list.innerHTML = `<div style="color:red; text-align:center">Ошибка. Проверь индексы Firebase!</div>`; 
-            }
+            } catch(e) { console.error(e); }
         }
 
         async function syncUser() {
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
+                // Force write XP as 0 if undefined
+                let xpToSend = state.xp;
+                if(xpToSend === undefined || xpToSend === null) xpToSend = 0;
+                
                 await setDoc(doc(window.dbInstance, "players", myId), {
-                    name: myName, 
-                    xp: state.xp || 0, // Ensure 0 is sent
-                    clanId: state.clanId||null, 
-                    clanTag: state.clanTag||null
+                    name: myName, xp: xpToSend, clanId: state.clanId||null, clanTag: state.clanTag||null
                 }, { merge: true });
             } catch(e){}
         }
@@ -627,17 +623,18 @@
                     const dd = d.data();
                     if(leadMode === 'players') {
                         let t = dd.clanTag ? ` <b style="color:var(--accent)">[${dd.clanTag}]</b>` : "";
+                        // Fallback 0 xp display
+                        let displayXp = (dd.xp !== undefined) ? dd.xp : 0;
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
                             <div style="flex:1"><b>${dd.name}</b>${t}</div>
-                            <b>${dd.xp} XP</b>
+                            <b>${displayXp} XP</b>
                         </div>`;
                     } else {
                         const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                         const max = 5 + (lvl * 2);
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
-                        
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
