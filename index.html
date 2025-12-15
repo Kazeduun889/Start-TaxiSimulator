@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 3.5</title>
+    <title>Taxi City 4.0</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- FIREBASE -->
+    <!-- FIREBASE MODULES -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
+        // 🔴 1. ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
        const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
@@ -26,11 +26,13 @@
 
         try {
             if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
-                alert("Ошибка: Вставь ключи Firebase!");
+                alert("⛔ ОШИБКА: Ты не вставил ключи Firebase в код!");
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
+                // Экспорт методов для использования в игре
                 window.dbMethods = { doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId };
+                console.log("✅ Firebase подключен");
             }
         } catch (e) { console.error(e); }
     </script>
@@ -41,7 +43,7 @@
             --text-main: #0F172A;
             --accent: #F59E0B;
             --card-bg: #FFFFFF;
-            --font: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
         }
         body.night-mode {
             --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%);
@@ -78,7 +80,7 @@
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -94,6 +96,7 @@
         .pop-txt { position:absolute; font-weight:900; font-size:28px; color:var(--text-main); pointer-events:none; animation:flyUp 0.6s forwards; z-index:100; }
         @keyframes flyUp { 100% { opacity:0; transform:translateY(-80px) scale(1.5); } }
 
+        /* Switcher */
         .switch-box { display: flex; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 14px; margin-bottom: 20px; }
         .switch-btn { flex: 1; border: none; background: transparent; padding: 12px; border-radius: 10px; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; }
         .switch-btn.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -103,21 +106,23 @@
         .nav-item.active { color:var(--accent); }
         .nav-item svg { width:24px; height:24px; fill:currentColor; }
         
+        /* Clan Specific */
         .clan-rank-row { padding:12px; background:white; margin-bottom:8px; border-radius:12px; display:flex; align-items:center; gap:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .rank-num { font-weight:900; width:25px; color:#94A3B8; font-size: 16px; }
         .clan-emoji-circle { width:35px; height:35px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
+        
+        /* Kick Button */
         .kick-btn { background: #fee2e2; color: #ef4444; border:none; padding: 6px 10px; border-radius: 8px; font-weight:bold; font-size: 10px; margin-left: auto; cursor: pointer; }
         
+        /* Clan Details */
         .clan-lvl-bar { width: 100%; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; margin-top: 5px; overflow: hidden; }
         .clan-lvl-fill { height: 100%; background: #10B981; width: 0%; transition: width 0.3s; }
         .treasury-box { background: rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; margin-top: 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center; }
         
-        .clan-notice { 
-            background: #FEF3C7; color: #92400E; padding: 12px; border-radius: 12px; 
-            margin-bottom: 20px; font-size: 13px; border: 1px solid #FCD34D; 
-            display: flex; justify-content: space-between; align-items: center;
-        }
+        .clan-notice { background: #FEF3C7; color: #92400E; padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 13px; border: 1px solid #FCD34D; display: flex; justify-content: space-between; align-items: center; }
         .edit-notice-btn { font-size: 16px; cursor: pointer; background:none; border:none; }
+        
+        /* Owner Grid */
         .owner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
         .owner-btn { background: #E0F2FE; color: #0284C7; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
     </style>
@@ -152,7 +157,7 @@
     <div id="tab-clans" class="tab-screen">
         <div class="header-title">Мой Клан 🛡️</div>
 
-        <!-- No Clan View -->
+        <!-- No Clan -->
         <div id="clan-view-none">
             <div class="list-card" style="display:block; text-align:center;">
                 <h3>Создать Клан</h3>
@@ -167,7 +172,7 @@
             <p style="text-align:center; margin-top:30px; opacity:0.6; font-size:12px">Вступить в клан: Вкладка "Топ" -> "Кланы"</p>
         </div>
 
-        <!-- Active Clan View -->
+        <!-- Active Clan -->
         <div id="clan-view-active" style="display:none">
             
             <!-- NOTICE BOARD -->
@@ -209,6 +214,7 @@
                 <button class="owner-btn" onclick="editClan('name')">✏️ Изм. Имя</button>
                 <button class="owner-btn" onclick="editClan('tag')">🏷️ Изм. Тег</button>
                 <button class="owner-btn" onclick="editClan('emoji')">🎨 Изм. Эмодзи</button>
+                <button class="owner-btn" onclick="editClan('notice')">📢 Изм. Инфо</button>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:20px;">
@@ -264,8 +270,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v3_5_leader_fix'; 
-        const OLD_KEYS = ['taxi_v3_4_complete', 'taxi_v3_2_stable'];
+        const SAVE_KEY = 'taxi_v4_0_stable'; 
+        const OLD_KEYS = ['taxi_v3_6_final', 'taxi_v3_5_leader_fix'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -297,6 +303,7 @@
                     if(d) { state = {...state, ...JSON.parse(d)}; break; }
                 }
             }
+            if(state.selected === 99) state.selected = 0; // cleanup old data
 
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
@@ -313,7 +320,7 @@
             updateUI();
             
             if(window.dbInstance) {
-                // Ensure user exists even if 0 XP
+                // Ensure user exists immediately
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
                 else loadClansLeaderboard();
@@ -322,9 +329,8 @@
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
-        // --- GAMEPLAY (ANTI-CHEAT) ---
-        let isRunning = false, speed = 0, progress = 0, loop = null, bgOff = 0;
-        let lastTapTime = 0, rapidTaps = 0, isOverheated = false;
+        // --- GAMEPLAY ---
+        let isRunning=false, speed=0, progress=0, loop=null, bgOff=0, lastTapTime=0, rapidTaps=0, isOverheated=false;
 
         function action() {
             if(isRunning || isOverheated) return;
@@ -354,7 +360,7 @@
         function tap(e) {
             if(!isRunning || isOverheated) return;
             const now = Date.now();
-            if(now - lastTapTime < 80) rapidTaps++; else rapidTaps = Math.max(0, rapidTaps - 1);
+            if(now - lastTapTime < 80) rapidTaps++; else rapidTaps = Math.max(0, rapidTaps-1);
             lastTapTime = now;
             if(rapidTaps > 8) { triggerOverheat(); return; }
 
@@ -365,7 +371,6 @@
             let cw = document.getElementById('car-wrap');
             cw.style.transform="scale(0.95)"; setTimeout(()=>cw.style.transform="scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
-
             if(e) {
                 let el = document.createElement('div'); el.className='pop-txt'; el.innerText="💨";
                 el.style.left=e.clientX+'px'; el.style.top=e.clientY+'px';
@@ -430,7 +435,6 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
-                // Check limits
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
@@ -462,7 +466,6 @@
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(targetId) });
                 await updateDoc(doc(window.dbInstance, "players", targetId), { clanId: null, clanTag: null });
-                alert("Игрок исключен.");
                 loadClanMembers();
             } catch(e) { console.error(e); }
         }
