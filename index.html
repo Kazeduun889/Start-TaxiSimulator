@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 3.7 (Online)</title>
+    <title>Taxi City 3.8 (Sync Repair)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -12,9 +12,9 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
+        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ НИЖЕ 🔴
         // ==================================================================
-       const firebaseConfig = {
+    const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -41,7 +41,7 @@
             --text-main: #0F172A;
             --accent: #F59E0B;
             --card-bg: #FFFFFF;
-            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            --font: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
         }
         body.night-mode {
             --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%);
@@ -78,7 +78,7 @@
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -116,9 +116,6 @@
         .edit-notice-btn { font-size: 16px; cursor: pointer; background:none; border:none; }
         .owner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
         .owner-btn { background: #E0F2FE; color: #0284C7; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
-        
-        /* NEW: Last Online Text */
-        .last-online { font-size: 10px; color: #94A3B8; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -141,7 +138,9 @@
             <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:16px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
         </div>
 
-        <div class="car-wrap" id="car-wrap" onclick="tap(event)"><div class="car-emoji" id="ui-car">🚖</div></div>
+        <div class="car-wrap" id="car-wrap" onclick="tap(event)">
+            <div class="car-emoji" id="ui-car">🚖</div>
+        </div>
         <div class="controls"><button id="btn-act" class="btn-main" onclick="action()">ВЗЯТЬ ЗАКАЗ</button></div>
     </div>
 
@@ -202,6 +201,7 @@
                 <button class="owner-btn" onclick="editClan('name')">✏️ Изм. Имя</button>
                 <button class="owner-btn" onclick="editClan('tag')">🏷️ Изм. Тег</button>
                 <button class="owner-btn" onclick="editClan('emoji')">🎨 Изм. Эмодзи</button>
+                <button class="owner-btn" onclick="editClan('notice')">📢 Изм. Инфо</button>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:20px;">
@@ -257,8 +257,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v3_7_online'; 
-        const OLD_KEYS = ['taxi_v3_5_leader_fix', 'taxi_v3_4_complete', 'taxi_v3_2_stable'];
+        const SAVE_KEY = 'taxi_v3_8_sync_repair'; 
+        const OLD_KEYS = ['taxi_v3_7_syncfix', 'taxi_v3_6_final'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -290,7 +290,6 @@
                     if(d) { state = {...state, ...JSON.parse(d)}; break; }
                 }
             }
-            if(state.selected === 99) state.selected = 0; // Clean old data
 
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
@@ -307,10 +306,33 @@
             updateUI();
             
             if(window.dbInstance) {
-                // Ensure user exists immediately
-                syncUser();
-                if(state.clanId) { loadClanData(); loadClanMembers(); }
-                else loadClansLeaderboard();
+                // --- SYNC REPAIR LOGIC START ---
+                if(state.clanId) {
+                     // Check if clan actually exists and has right tag
+                     const { getDoc, doc } = window.dbMethods;
+                     getDoc(doc(window.dbInstance, "clans", state.clanId)).then(snap => {
+                         if(!snap.exists()) {
+                             // Clan is dead, kick self
+                             console.log("Clan dead, kicking self");
+                             state.clanId = null; 
+                             state.clanTag = null; 
+                             save(); syncUser(); updateUI();
+                         } else {
+                             // Clan alive, ensure tag match
+                             const d = snap.data();
+                             if(state.clanTag !== d.tag) { 
+                                 state.clanTag = d.tag; 
+                                 save(); 
+                             }
+                             syncUser(); // Force update profile with correct clan info
+                             loadClanData(); loadClanMembers();
+                         }
+                     });
+                } else {
+                    syncUser();
+                    loadClansLeaderboard();
+                }
+                // --- SYNC REPAIR LOGIC END ---
             }
         }
 
@@ -358,6 +380,7 @@
             let cw = document.getElementById('car-wrap');
             cw.style.transform="scale(0.95)"; setTimeout(()=>cw.style.transform="scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
+
             if(e) {
                 let el = document.createElement('div'); el.className='pop-txt'; el.innerText="💨";
                 el.style.left=e.clientX+'px'; el.style.top=e.clientY+'px';
@@ -570,7 +593,6 @@
             } catch(e) {}
         }
 
-        // --- NEW SAFE CLAN MEMBER LOADER (FIXED) ---
         async function loadClanMembers(anim=false) {
             if(!window.dbInstance || !state.clanId) return;
             const list = document.getElementById('clan-members-list');
@@ -579,7 +601,6 @@
             try {
                 const { getDoc, doc, where, query, collection, getDocs, documentId } = window.dbMethods;
                 
-                // 1. Get Clan members IDs
                 const cSnap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
                 if(!cSnap.exists()) return;
                 const memberIds = cSnap.data().members || [];
@@ -587,7 +608,6 @@
                 if(memberIds.length === 0) { list.innerHTML="Пусто"; return; }
 
                 let members = [];
-                // 2. SAFE LOADING (no index required)
                 const chunks = [];
                 for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
 
@@ -600,11 +620,7 @@
                         members.push(p); 
                     });
                 }
-                
-                // Time calculations
-                const now = Date.now();
 
-                // Sort by XP
                 members.sort((a,b) => (b.xp||0) - (a.xp||0));
 
                 let html = "";
@@ -612,27 +628,10 @@
 
                 members.forEach((m, i) => {
                     let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
-                    
-                    let displayName = m.name;
-                    if(m.id === currentClanOwner) displayName = `👑 ${m.name}`;
-
-                    // Online Status Logic
-                    let lastActiveText = "Неизвестно";
-                    if(m.lastActive) {
-                        const diffMin = Math.floor((now - m.lastActive) / 60000);
-                        if(diffMin < 2) lastActiveText = `<span style="color:#10B981">● В сети</span>`;
-                        else if(diffMin < 60) lastActiveText = `${diffMin} мин. назад`;
-                        else if(diffMin < 1440) lastActiveText = `${Math.floor(diffMin/60)} ч. назад`;
-                        else lastActiveText = `${Math.floor(diffMin/1440)} дн. назад`;
-                    }
-
                     let kickBtn = (isOwner && m.id !== myId) ? `<button class="kick-btn" onclick="kickMember('${m.id}')">❌</button>` : "";
                     
                     html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center">
-                        <div style="flex:1">
-                            <span>${medal} ${displayName}</span><br>
-                            <span class="last-online">${lastActiveText}</span>
-                        </div>
+                        <div style="flex:1"><span>${medal} ${m.name}</span></div>
                         <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp || 0} XP</b>${kickBtn}</div>
                     </div>`;
                 });
@@ -655,8 +654,7 @@
                     name: myName, 
                     xp: xpToSend, 
                     clanId: state.clanId||null, 
-                    clanTag: state.clanTag||null,
-                    lastActive: Date.now() // Save time for online status
+                    clanTag: state.clanTag||null
                 }, { merge: true });
             } catch(e){}
         }
@@ -678,13 +676,12 @@
                     const dd = d.data();
                     if(leadMode === 'players') {
                         let t = dd.clanTag ? ` <b style="color:var(--accent)">[${dd.clanTag}]</b>` : "";
-                        // Fallback 0 xp display
-                        let displayXp = (dd.xp !== undefined) ? dd.xp : 0;
+                        let xpVal = dd.xp !== undefined ? dd.xp : 0;
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
                             <div style="flex:1"><b>${dd.name}</b>${t}</div>
-                            <b>${displayXp} XP</b>
+                            <b>${xpVal} XP</b>
                         </div>`;
                     } else {
                         const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
