@@ -642,19 +642,22 @@
             }
         }
 
-        async function syncUser() {
-            if(!window.dbInstance) return;
-            try {
-                const { setDoc, doc } = window.dbMethods;
-                // Force write XP as 0 if undefined
-                let xpToSend = state.xp;
-                if(xpToSend === undefined || xpToSend === null) xpToSend = 0;
-                
-                await setDoc(doc(window.dbInstance, "players", myId), {
-                    name: myName, xp: xpToSend, clanId: state.clanId||null, clanTag: state.clanTag||null
-                }, { merge: true });
-            } catch(e){}
-        }
+           async function syncUser() {
+    if(!window.dbInstance) return;
+    try {
+        const { setDoc, doc } = window.dbMethods;
+        await setDoc(doc(window.dbInstance, "players", myId), {
+            name: myName, 
+            xp: state.xp || 0,
+            
+            // 👇 ВОТ ЭТИ ДВЕ СТРОЧКИ ОБЯЗАТЕЛЬНЫ 👇
+            clanId: state.clanId || null, 
+            clanTag: state.clanTag || null 
+            // 👆 БЕЗ НИХ ТЕГ НЕ БУДЕТ ВИДЕН В РЕЙТИНГЕ 👆
+            
+        }, { merge: true });
+    } catch(e) { console.error(e); }
+}
 
         let leadMode = 'players';
         window.switchLead = function(m) { leadMode=m; document.getElementById('btn-lead-players').className=m==='players'?'switch-btn active':'switch-btn'; document.getElementById('btn-lead-clans').className=m==='clans'?'switch-btn active':'switch-btn'; loadLeaderboard(); }
