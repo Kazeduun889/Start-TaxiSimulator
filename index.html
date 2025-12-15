@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 2.7 (Clan Eco)</title>
+    <title>Taxi City 2.8 (Full Clans)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -14,7 +14,7 @@
         // ==================================================================
         // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
-     const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -26,7 +26,7 @@
 
         try {
             if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
-                console.error("Нет ключей!");
+                alert("Ошибка: Вставь ключи Firebase!");
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
@@ -78,7 +78,7 @@
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -109,19 +109,16 @@
         .clan-emoji-circle { width:35px; height:35px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
         .kick-btn { background: #fee2e2; color: #ef4444; border:none; padding: 6px 10px; border-radius: 8px; font-weight:bold; font-size: 10px; margin-left: auto; cursor: pointer; }
         
-        /* Clan Level Bar */
+        /* Clan Level & Treasury */
         .clan-lvl-bar { width: 100%; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; margin-top: 5px; overflow: hidden; }
-        .clan-lvl-fill { height: 100%; background: #10B981; width: 0%; }
-        .treasury-box { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin-top: 10px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); }
+        .clan-lvl-fill { height: 100%; background: #10B981; width: 0%; transition: width 0.3s; }
+        .treasury-box { background: rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; margin-top: 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center; }
     </style>
 </head>
 <body>
 
     <div class="hud-bar">
-        <div class="pill">
-            <div id="conn-status" style="width:8px;height:8px;border-radius:50%;background:#ccc;margin-right:5px"></div>
-            💰 <span id="ui-money">0</span>
-        </div>
+        <div class="pill">💰 <span id="ui-money">0</span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
@@ -179,17 +176,20 @@
                 
                 <!-- Level Progress -->
                 <div style="margin-top:15px; text-align:left">
-                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px; opacity:0.8">
                         <span>XP: <span id="ui-my-clan-xp">0</span></span>
-                        <span id="ui-clan-next-xp">10000</span>
+                        <span>След: <span id="ui-clan-next-xp">10000</span></span>
                     </div>
                     <div class="clan-lvl-bar"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
                 </div>
 
                 <!-- Treasury -->
                 <div class="treasury-box">
-                    🏦 Казна: <b style="color:#10B981" id="ui-clan-money">0</b> 💰
-                    <button class="shop-btn" style="padding:4px 8px; font-size:10px; margin-left:10px" onclick="donateToClan()">Внести 1000</button>
+                    <div>
+                        🏦 Казна:<br>
+                        <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰
+                    </div>
+                    <button class="shop-btn" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
                 </div>
             </div>
 
@@ -243,8 +243,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v2_7_eco'; 
-        const OLD_KEYS = ['taxi_v2_6_final', 'taxi_v2_6_design', 'taxi_v2_5_safe'];
+        const SAVE_KEY = 'taxi_v2_8_full'; 
+        const OLD_KEYS = ['taxi_v2_6_final', 'taxi_v2_5_safe'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -255,9 +255,9 @@
         ];
         const staffData = { novice: {c:1000,i:1}, pro: {c:4000,i:5}, expert: {c:15000,i:20} };
 
-        // User
+        // User Setup
         const user = tg.initDataUnsafe.user;
-        const myId = user ? user.id.toString() : "guest_"+Math.floor(Math.random()*9999);
+        const myId = user ? user.id.toString() : "guest_" + Math.floor(Math.random()*9999);
         const myName = user ? user.first_name : "Игрок";
 
         // State
@@ -290,13 +290,6 @@
                 }
             }, 1000);
 
-            setInterval(() => {
-                if(window.dbInstance) {
-                    syncUser();
-                    document.getElementById('conn-status').className = 'conn-ok';
-                } else document.getElementById('conn-status').className = 'conn-err';
-            }, 15000);
-
             updateUI();
             
             if(window.dbInstance) {
@@ -309,14 +302,17 @@
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
 
         // --- GAMEPLAY ---
-        let isRunning=false, speed=0, progress=0, loop=null, bgOff=0;
-        let lastTapTime=0, rapidTaps=0, isOverheated=false;
+        let isRunning=false, speed=0, progress=0, loop=null, bgOff=0, lastTapTime=0, rapidTaps=0, isOverheated=false;
 
         function action() {
             if(isRunning || isOverheated) return;
-            if(state.fuel <= 0) { if(state.money>=10){state.money-=10;state.fuel++;save();updateUI();} return; }
+            if(state.fuel <= 0) {
+                if(state.money>=10){state.money-=10;state.fuel++;save();updateUI();}
+                return;
+            }
             state.fuel--; state.lastRefill=Date.now();
-            isRunning=true; progress=0; speed=0; save(); updateUI();
+            isRunning = true; progress = 0; speed = 0;
+            save(); updateUI();
             
             const btn = document.getElementById('btn-act');
             btn.innerText = "🚖 ПОЕХАЛИ!"; btn.style.background = "#333";
@@ -346,7 +342,7 @@
             
             let cw = document.getElementById('car-wrap');
             cw.style.transform="scale(0.95)"; setTimeout(()=>cw.style.transform="scale(1)", 80);
-            
+            tg.HapticFeedback.impactOccurred('light');
             if(e) {
                 let el = document.createElement('div'); el.className='pop-txt'; el.innerText="💨";
                 el.style.left=e.clientX+'px'; el.style.top=e.clientY+'px';
@@ -355,29 +351,33 @@
         }
 
         function triggerOverheat() {
-            isOverheated=true; speed=0;
-            document.getElementById('overheat-msg').style.display='block';
+            isOverheated = true; speed = 0;
+            document.getElementById('overheat-msg').style.display = 'block';
             document.getElementById('car-wrap').classList.add('overheated');
+            tg.HapticFeedback.notificationOccurred('error');
             setTimeout(() => {
-                isOverheated=false;
-                document.getElementById('overheat-msg').style.display='none';
+                isOverheated = false;
+                document.getElementById('overheat-msg').style.display = 'none';
                 document.getElementById('car-wrap').classList.remove('overheated');
             }, 3000);
         }
 
         function finish() {
             if(!isRunning) return;
-            clearInterval(loop); isRunning=false;
+            clearInterval(loop); isRunning = false;
             let c = carsDB.find(x=>x.id===state.selected);
             let earn = c.reward + Math.floor(Math.random()*20);
-            state.money+=earn; state.xp+=20;
+            state.money += earn; state.xp += 20;
             
             if(window.dbInstance && state.clanId) {
                 const { doc, updateDoc, increment } = window.dbMethods;
-                updateDoc(doc(window.dbInstance,"clans",state.clanId),{xp:increment(20)}).catch(()=>{});
+                updateDoc(doc(window.dbInstance, "clans", state.clanId), { xp: increment(20) }).catch(()=>{});
             }
+
             save(); updateUI(); syncUser();
-            const btn = document.getElementById('btn-act'); btn.innerText = "ПРИЕХАЛИ!"; btn.style.background = "var(--accent)";
+            tg.HapticFeedback.notificationOccurred('success');
+            const btn = document.getElementById('btn-act');
+            btn.innerText = "ПРИЕХАЛИ!"; btn.style.background = "var(--accent)";
             setTimeout(() => { if(!isRunning) updateUI(); }, 1000);
         }
 
@@ -407,19 +407,20 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
-                // Check limits first
+                
+                // CHECK LIMIT BEFORE JOIN
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
-                    const data = snap.data();
-                    const lvl = Math.floor((data.xp || 0) / 10000) + 1;
-                    const max = 5 + (lvl * 2);
-                    if(data.members.length >= max) return alert("Клан переполнен!");
+                    const d = snap.data();
+                    const lvl = Math.floor((d.xp || 0) / 10000) + 1;
+                    const limit = 5 + (lvl * 2);
+                    if(d.members.length >= limit) return alert("Клан переполнен! (" + limit + " макс)");
                 }
 
                 await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
                 state.clanId = id; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
-            } catch(e) { alert("Ошибка вступления"); }
+            } catch(e) {}
         }
 
         async function leaveClan() {
@@ -432,27 +433,24 @@
         }
 
         async function kickMember(targetId) {
-            if(!state.clanId || !window.dbInstance) return;
             if(!confirm("Выгнать участника?")) return;
             try {
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(targetId) });
                 await updateDoc(doc(window.dbInstance, "players", targetId), { clanId: null, clanTag: null });
-                alert("Игрок исключен.");
                 loadClanMembers();
             } catch(e) { console.error(e); }
         }
 
         async function donateToClan() {
             if(state.money < 1000) return alert("Нужно 1000 монет");
-            if(!state.clanId) return;
             state.money -= 1000;
             save(); updateUI();
             
             try {
                 const { doc, updateDoc, increment } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { money: increment(1000) });
-                loadClanData();
+                loadClanData(); // Refresh UI
             } catch(e) {}
         }
 
@@ -468,13 +466,15 @@
                 let html = ""; let r=1;
                 snap.forEach(d => {
                     const dd = d.data();
+                    const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
+                    const max = 5 + (lvl * 2);
                     html += `
                     <div class="clan-rank-row">
                         <div class="rank-num">${r}.</div>
                         <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                         <div style="flex:1">
                             <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
-                            <div style="font-size:11px; opacity:0.6">${dd.members.length} уч. | Ур. ${Math.floor(dd.xp/10000)+1}</div>
+                            <div style="font-size:11px; opacity:0.6">Уч: ${dd.members.length} / ${max} | Ур. ${lvl}</div>
                         </div>
                         <div style="font-weight:bold; color:var(--accent)">${dd.xp} XP</div>
                         ${(!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px; font-size:11px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : ''}
@@ -493,7 +493,6 @@
                     const d = snap.data();
                     currentClanOwner = d.owner;
                     
-                    // Calc Level
                     const xp = d.xp || 0;
                     const lvl = Math.floor(xp / 10000) + 1;
                     const nextXp = lvl * 10000;
@@ -506,11 +505,11 @@
                     document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
                     document.getElementById('ui-my-clan-xp').innerText = xp;
                     
+                    // NEW ELEMENTS FOR 2.8
                     document.getElementById('ui-clan-level').innerText = lvl;
                     document.getElementById('ui-clan-money').innerText = d.money || 0;
                     document.getElementById('ui-clan-next-xp').innerText = nextXp;
                     document.getElementById('ui-clan-xp-bar').style.width = Math.min(progress, 100) + "%";
-                    
                     document.getElementById('ui-clan-members-count').innerText = `${d.members.length}/${maxMembers}`;
 
                     if(state.clanTag!==d.tag){ state.clanTag=d.tag; save(); }
@@ -578,14 +577,19 @@
                             <b>${dd.xp} XP</b>
                         </div>`;
                     } else {
+                        // CLAN ROW WITH LIMITS
+                        const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
+                        const max = 5 + (lvl * 2);
+                        
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
+                        
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
                             <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                             <div style="flex:1">
                                 <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
-                                <div style="font-size:11px; opacity:0.6">${dd.members ? dd.members.length : 0} уч.</div>
+                                <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
                             </div>
                             <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
                             ${btn}
