@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 3.3 (Clan Fix)</title>
+    <title>Taxi City 3.4 (Clan Control)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -12,9 +12,9 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ НИЖЕ 🔴
+        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
-   const firebaseConfig = {
+      const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -78,7 +78,7 @@
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -108,15 +108,19 @@
         .clan-emoji-circle { width:35px; height:35px; background:#f3f4f6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
         .kick-btn { background: #fee2e2; color: #ef4444; border:none; padding: 6px 10px; border-radius: 8px; font-weight:bold; font-size: 10px; margin-left: auto; cursor: pointer; }
         
-        /* Clan Level & Treasury & Notice */
+        /* Clan Features */
         .clan-lvl-bar { width: 100%; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; margin-top: 5px; overflow: hidden; }
         .clan-lvl-fill { height: 100%; background: #10B981; width: 0%; transition: width 0.3s; }
         .treasury-box { background: rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; margin-top: 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center; }
         
-        .notice-board { background:#FEF3C7; padding:10px; border-radius:12px; border:1px solid #FCD34D; font-size:13px; color:#92400E; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; }
-        .edit-pen { cursor:pointer; font-size:16px; margin-left:10px; border:none; background:none;}
-        
-        .settings-btn { background:rgba(0,0,0,0.1); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; }
+        .clan-notice { 
+            background: #FEF3C7; color: #92400E; padding: 12px; border-radius: 12px; 
+            margin-bottom: 20px; font-size: 13px; border: 1px solid #FCD34D; 
+        }
+
+        /* OWNER CONTROLS */
+        .owner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
+        .owner-btn { background: #E0F2FE; color: #0284C7; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -168,41 +172,51 @@
         <div id="clan-view-active" style="display:none">
             
             <!-- NOTICE BOARD -->
-            <div id="ui-clan-notice-box" class="notice-board" style="display:none">
-                <span id="ui-clan-notice">📢 Добро пожаловать!</span>
-                <button id="btn-edit-notice" class="edit-pen" onclick="editNotice()">✏️</button>
+            <div id="ui-clan-notice-box" class="clan-notice">
+                📢 <span id="ui-clan-notice-text">Загрузка...</span>
             </div>
 
             <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:16px; text-align:center; margin-bottom:20px;">
                 <div style="display:flex; justify-content:space-between; align-items:start">
                     <div id="ui-my-clan-icon" style="font-size:40px;">🛡️</div>
-                    <div>
-                        <!-- SETTINGS BUTTON FOR OWNER -->
-                        <button id="btn-clan-settings" class="settings-btn" style="display:none" onclick="openClanSettings()">⚙️</button>
+                    <div style="text-align:right">
+                        <div style="font-size:12px; opacity:0.7">УРОВЕНЬ</div>
+                        <div style="font-size:24px; font-weight:900; color:var(--accent)" id="ui-clan-level">1</div>
                     </div>
                 </div>
                 
                 <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0; font-size:30px; margin-top:-10px">TAG</h1>
                 <h2 id="ui-my-clan-name" style="margin:5px 0 0 0">Название</h2>
-                <div style="font-size:12px; opacity:0.7; margin-top:5px">Уровень <span id="ui-clan-level">1</span></div>
                 
-                <div class="clan-lvl-bar" style="margin-top:10px"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
-                <div style="font-size:10px; display:flex; justify-content:space-between; margin-top:3px; opacity:0.6">
-                    <span id="ui-my-clan-xp">0 XP</span>
-                    <span id="ui-clan-next-xp">10k</span>
+                <!-- Level Progress -->
+                <div style="margin-top:15px; text-align:left">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px; opacity:0.8">
+                        <span>XP: <span id="ui-my-clan-xp">0</span></span>
+                        <span>След: <span id="ui-clan-next-xp">10000</span></span>
+                    </div>
+                    <div class="clan-lvl-bar"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
                 </div>
 
+                <!-- Treasury -->
                 <div class="treasury-box">
                     <div>🏦 Казна: <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰</div>
-                    <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">+1000</button>
+                    <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
                 </div>
             </div>
+            
+            <!-- OWNER CONTROLS -->
+            <div id="owner-panel" class="owner-grid" style="display:none">
+                <button class="owner-btn" onclick="editClan('name')">✏️ Изм. Имя</button>
+                <button class="owner-btn" onclick="editClan('tag')">🏷️ Изм. Тег</button>
+                <button class="owner-btn" onclick="editClan('emoji')">🎨 Изм. Эмодзи</button>
+                <button class="owner-btn" onclick="editClan('notice')">📢 Изм. Инфо</button>
+            </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:20px;">
                 <h3>Участники</h3>
                 <div style="display:flex; align-items:center; gap:10px">
                     <span style="font-size:12px; opacity:0.6" id="ui-clan-members-count">0/5</span>
-                    <button class="shop-btn" style="padding:4px 8px; font-size:12px" onclick="loadClanMembers()">🔄</button>
+                    <button class="shop-btn" style="padding:4px 8px; font-size:12px" onclick="loadClanMembers(true)">🔄 Обновить</button>
                 </div>
             </div>
             
@@ -251,7 +265,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v3_3_fix'; 
+        const SAVE_KEY = 'taxi_v3_4_complete'; 
         const OLD_KEYS = ['taxi_v3_2_stable', 'taxi_v2_9_final'];
 
         const carsDB = [
@@ -262,12 +276,10 @@
         ];
         const staffData = { novice: {c:1000,i:1}, pro: {c:4000,i:5}, expert: {c:15000,i:20} };
 
-        // User Setup
         const user = tg.initDataUnsafe.user;
-        const myId = user ? user.id.toString() : "guest_" + Math.floor(Math.random()*9999);
+        const myId = user ? user.id.toString() : "guest_"+Math.floor(Math.random()*9999);
         const myName = user ? user.first_name : "Игрок";
 
-        // State
         let state = {
             money: 0, xp: 0, fuel: 10, lastRefill: Date.now(), owned: [0], selected: 0,
             upgrades: { tank:0, click:0 }, staff: { novice:0, pro:0, expert:0 },
@@ -300,7 +312,6 @@
             updateUI();
             
             if(window.dbInstance) {
-                // Ensure user exists even if 0 XP
                 syncUser();
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
                 else loadClansLeaderboard();
@@ -405,7 +416,7 @@
             try {
                 const { setDoc, doc } = window.dbMethods;
                 await setDoc(doc(window.dbInstance, "clans", clanId), {
-                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp, money: 0, notice: "Всем привет!"
+                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp, money: 0, notice: "Добро пожаловать!"
                 });
                 state.clanId = clanId; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
@@ -415,6 +426,7 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
+                // Check limits
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
@@ -461,23 +473,14 @@
             } catch(e) {}
         }
         
-        async function editNotice() {
+        async function editClan(field) {
             if(currentClanOwner !== myId) return;
-            const t = prompt("Новое объявление:");
-            if(t) {
+            const currentVal = document.getElementById(field === 'emoji' ? 'ui-my-clan-icon' : (field==='tag'?'ui-my-clan-tag':'ui-clan-notice-text')).innerText;
+            const newVal = prompt("Новое значение:", currentVal);
+            if(newVal) {
                  const { doc, updateDoc } = window.dbMethods;
-                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { notice: t });
+                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { [field]: newVal });
                  loadClanData();
-            }
-        }
-        
-        async function openClanSettings() {
-            // Simple prompts for editing name/tag for owner
-            let newName = prompt("Новое имя клана:");
-            if(newName) {
-                const { doc, updateDoc } = window.dbMethods;
-                await updateDoc(doc(window.dbInstance, "clans", state.clanId), { name: newName });
-                loadClanData();
             }
         }
 
@@ -537,42 +540,52 @@
                     document.getElementById('ui-clan-xp-bar').style.width = Math.min(progress, 100) + "%";
                     document.getElementById('ui-clan-members-count').innerText = `${d.members.length}/${maxMembers}`;
                     
-                    // Notice Logic
-                    if(d.notice) {
-                        document.getElementById('ui-clan-notice-box').style.display='flex';
-                        document.getElementById('ui-clan-notice').innerText = "📢 " + d.notice;
-                    }
-                    if(currentClanOwner === myId) {
-                         document.getElementById('btn-edit-notice').style.display='block';
-                         document.getElementById('btn-clan-settings').style.display='block';
-                    } else {
-                         document.getElementById('btn-edit-notice').style.display='none';
-                         document.getElementById('btn-clan-settings').style.display='none';
-                    }
+                    if(d.notice) document.getElementById('ui-clan-notice-text').innerText = d.notice;
+
+                    // Show Owner Buttons
+                    if(currentClanOwner === myId) document.getElementById('owner-panel').style.display='grid';
+                    else document.getElementById('owner-panel').style.display='none';
 
                     if(state.clanTag!==d.tag){ state.clanTag=d.tag; save(); }
                 }
             } catch(e) {}
         }
 
-        // --- NEW MEMBER LOADING LOGIC (FIX FOR 0 XP) ---
-        async function loadClanMembers() {
+        async function loadClanMembers(anim=false) {
             if(!window.dbInstance || !state.clanId) return;
             const list = document.getElementById('clan-members-list');
+            if(anim) { 
+                list.innerHTML = `<div style="text-align:center; padding:20px">Загрузка...</div>`;
+                list.classList.add('loading-anim'); // fake class to trigger redraw
+            }
+            
             try {
-                const { getDocs, collection, query, where } = window.dbMethods;
+                const { getDoc, doc, where, query, collection, getDocs, documentId } = window.dbMethods;
                 
-                // Get all players with this clanId
-                const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
-                const snap = await getDocs(q);
-                
+                // 1. Получаем список ID участников клана
+                const cSnap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
+                if(!cSnap.exists()) return;
+                const memberIds = cSnap.data().members || [];
+
+                if(memberIds.length === 0) { list.innerHTML="Пусто"; return; }
+
                 let members = [];
-                snap.forEach(d => { 
-                    let p = d.data(); p.id = d.id;
-                    // IF XP IS UNDEFINED, TREAT AS 0
-                    if(p.xp === undefined || p.xp === null) p.xp = 0;
-                    members.push(p); 
-                });
+                
+                // 2. Скачиваем профили. Трюк: `where documentId in [...]` работает только до 10 ID.
+                // Если клан большой, нужно разбивать на пачки.
+                const chunks = [];
+                for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
+
+                for (const chunk of chunks) {
+                    const q = query(collection(window.dbInstance, "players"), where(documentId(), "in", chunk));
+                    const snap = await getDocs(q);
+                    snap.forEach(d => { 
+                        let p = d.data(); p.id = d.id;
+                        // FIX: Если XP нет, считаем за 0
+                        if(p.xp === undefined || p.xp === null) p.xp = 0;
+                        members.push(p); 
+                    });
+                }
 
                 members.sort((a,b) => b.xp - a.xp);
 
@@ -589,19 +602,21 @@
                     </div>`;
                 });
                 list.innerHTML = html || "Список пуст";
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                console.error(e);
+                list.innerHTML = `<div style="color:red; text-align:center; font-size:12px">Ошибка загрузки. <br>Нужен индекс в Firebase console!</div>`; 
+            }
         }
 
         async function syncUser() {
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
-                // Force write XP as 0 if undefined
-                let xpToSend = state.xp;
-                if(xpToSend === undefined || xpToSend === null) xpToSend = 0;
-                
                 await setDoc(doc(window.dbInstance, "players", myId), {
-                    name: myName, xp: xpToSend, clanId: state.clanId||null, clanTag: state.clanTag||null
+                    name: myName, 
+                    xp: state.xp || 0, // Force 0 if null
+                    clanId: state.clanId||null, 
+                    clanTag: state.clanTag||null
                 }, { merge: true });
             } catch(e){}
         }
@@ -623,25 +638,25 @@
                     const dd = d.data();
                     if(leadMode === 'players') {
                         let t = dd.clanTag ? ` <b style="color:var(--accent)">[${dd.clanTag}]</b>` : "";
-                        // Fallback 0 xp display
-                        let displayXp = (dd.xp !== undefined) ? dd.xp : 0;
+                        let xpVal = dd.xp !== undefined ? dd.xp : 0;
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
                             <div style="flex:1"><b>${dd.name}</b>${t}</div>
-                            <b>${displayXp} XP</b>
+                            <b>${xpVal} XP</b>
                         </div>`;
                     } else {
                         const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                         const max = 5 + (lvl * 2);
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
+                        
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
                             <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                             <div style="flex:1">
                                 <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
-                                <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
+                                <div style="font-size:11px; opacity:0.6">${dd.members ? dd.members.length : 0} уч. | Ур. ${lvl}</div>
                             </div>
                             <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
                             ${btn}
