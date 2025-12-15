@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 2.8 (Full Clans)</title>
+    <title>Taxi City 2.9</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -78,7 +78,7 @@ const firebaseConfig = {
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -88,6 +88,7 @@ const firebaseConfig = {
         .list-card { background:var(--card-bg); padding:16px; border-radius:16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
         .shop-btn { background:rgba(128,128,128,0.1); border:none; padding:8px 16px; border-radius:10px; font-weight:700; color:var(--text-main); }
         .shop-btn.active { background:var(--accent); color:black; }
+        .shop-btn:disabled { opacity: 0.5; }
         .clan-input { width:100%; padding:14px; border-radius:12px; border:1px solid #ccc; margin-bottom:10px; box-sizing:border-box; font-size:16px; }
         
         .theme-toggle { position:absolute; top:60px; right:15px; width:35px; height:35px; background:rgba(0,0,0,0.3); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:50; }
@@ -189,7 +190,7 @@ const firebaseConfig = {
                         🏦 Казна:<br>
                         <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰
                     </div>
-                    <button class="shop-btn" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
+                    <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
                 </div>
             </div>
 
@@ -243,8 +244,8 @@ const firebaseConfig = {
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v2_8_full'; 
-        const OLD_KEYS = ['taxi_v2_6_final', 'taxi_v2_5_safe'];
+        const SAVE_KEY = 'taxi_v2_9_leader'; 
+        const OLD_KEYS = ['taxi_v2_8_full', 'taxi_v2_6_final'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -407,8 +408,7 @@ const firebaseConfig = {
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
-                
-                // CHECK LIMIT BEFORE JOIN
+                // Check limits first
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
@@ -420,7 +420,7 @@ const firebaseConfig = {
                 await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
                 state.clanId = id; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
-            } catch(e) {}
+            } catch(e) { alert("Ошибка вступления"); }
         }
 
         async function leaveClan() {
@@ -438,6 +438,7 @@ const firebaseConfig = {
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(targetId) });
                 await updateDoc(doc(window.dbInstance, "players", targetId), { clanId: null, clanTag: null });
+                alert("Игрок исключен.");
                 loadClanMembers();
             } catch(e) { console.error(e); }
         }
@@ -466,15 +467,13 @@ const firebaseConfig = {
                 let html = ""; let r=1;
                 snap.forEach(d => {
                     const dd = d.data();
-                    const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
-                    const max = 5 + (lvl * 2);
                     html += `
                     <div class="clan-rank-row">
                         <div class="rank-num">${r}.</div>
                         <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                         <div style="flex:1">
                             <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
-                            <div style="font-size:11px; opacity:0.6">Уч: ${dd.members.length} / ${max} | Ур. ${lvl}</div>
+                            <div style="font-size:11px; opacity:0.6">${dd.members.length} уч. | Ур. ${Math.floor(dd.xp/10000)+1}</div>
                         </div>
                         <div style="font-weight:bold; color:var(--accent)">${dd.xp} XP</div>
                         ${(!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px; font-size:11px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : ''}
@@ -505,7 +504,6 @@ const firebaseConfig = {
                     document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
                     document.getElementById('ui-my-clan-xp').innerText = xp;
                     
-                    // NEW ELEMENTS FOR 2.8
                     document.getElementById('ui-clan-level').innerText = lvl;
                     document.getElementById('ui-clan-money').innerText = d.money || 0;
                     document.getElementById('ui-clan-next-xp').innerText = nextXp;
@@ -533,9 +531,17 @@ const firebaseConfig = {
 
                 members.forEach((m, i) => {
                     let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
+                    
+                    // --- NEW: CROWN FOR LEADER ---
+                    let nameDisplay = m.name;
+                    if(m.id === currentClanOwner) {
+                        nameDisplay = `👑 ${m.name}`;
+                    }
+
                     let kickBtn = (isOwner && m.id !== myId) ? `<button class="kick-btn" onclick="kickMember('${m.id}')">❌</button>` : "";
+                    
                     html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center">
-                        <div style="flex:1"><span>${medal} ${m.name}</span></div>
+                        <div style="flex:1"><span>${medal} ${nameDisplay}</span></div>
                         <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp} XP</b>${kickBtn}</div>
                     </div>`;
                 });
@@ -577,19 +583,14 @@ const firebaseConfig = {
                             <b>${dd.xp} XP</b>
                         </div>`;
                     } else {
-                        // CLAN ROW WITH LIMITS
-                        const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
-                        const max = 5 + (lvl * 2);
-                        
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
-                        
                         html += `
                         <div class="clan-rank-row">
                             <div class="rank-num">${r}.</div>
                             <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                             <div style="flex:1">
                                 <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
-                                <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
+                                <div style="font-size:11px; opacity:0.6">${dd.members ? dd.members.length : 0} уч.</div>
                             </div>
                             <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
                             ${btn}
@@ -629,8 +630,21 @@ const firebaseConfig = {
 
             document.getElementById('btn-hire-novice').innerText = (staffData.novice.c*(state.staff.novice+1))+"💰";
             document.getElementById('btn-hire-pro').innerText = (staffData.pro.c*(state.staff.pro+1))+"💰";
+            document.getElementById('btn-hire-expert').innerText = (staffData.expert.c*(state.staff.expert+1))+"💰";
             document.getElementById('btn-upg-tank').innerText = (500*(state.upgrades.tank+1))+"💰";
             document.getElementById('btn-upg-click').innerText = (1000*(state.upgrades.click+1))+"💰";
+            
+            // NEW: Grey out donate button if poor
+            const donateBtn = document.getElementById('btn-donate-clan');
+            if(donateBtn) {
+                if(state.money < 1000) {
+                    donateBtn.style.opacity = "0.5";
+                    donateBtn.disabled = true;
+                } else {
+                    donateBtn.style.opacity = "1";
+                    donateBtn.disabled = false;
+                }
+            }
 
             if(!isRunning && !isOverheated) {
                 const btn = document.getElementById('btn-act');
