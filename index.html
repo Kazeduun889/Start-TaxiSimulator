@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 3.8</title>
+    <title>Taxi City 4.1 (Kick Fix)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -14,7 +14,7 @@
         // ==================================================================
         // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
-      const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -41,7 +41,7 @@
             --text-main: #0F172A;
             --accent: #F59E0B;
             --card-bg: #FFFFFF;
-            --font: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
         }
         body.night-mode {
             --bg-grad: linear-gradient(to bottom, #0F172A 0%, #1E293B 100%);
@@ -78,7 +78,7 @@
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -166,6 +166,7 @@
         <!-- Active Clan View -->
         <div id="clan-view-active" style="display:none">
             
+            <!-- NOTICE BOARD -->
             <div id="ui-clan-notice-box" class="clan-notice">
                 <div>📢 <span id="ui-clan-notice-text">Загрузка...</span></div>
                 <button id="btn-edit-notice" class="edit-notice-btn" style="display:none" onclick="editClan('notice')">✏️</button>
@@ -192,6 +193,7 @@
                     <div class="clan-lvl-bar"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
                 </div>
 
+                <!-- Treasury -->
                 <div class="treasury-box">
                     <div>🏦 Казна: <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰</div>
                     <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
@@ -200,18 +202,17 @@
             
             <!-- OWNER CONTROLS -->
             <div id="owner-panel" class="owner-grid" style="display:none">
-                <button class="owner-btn" onclick="editClan('name')">✏️ Имя</button>
-                <button class="owner-btn" onclick="editClan('tag')">🏷️ Тег</button>
-                <button class="owner-btn" onclick="editClan('emoji')">🎨 Эмодзи</button>
-                <button class="owner-btn" onclick="editClan('color')">🌈 Цвет</button>
-                <button class="owner-btn" onclick="editClan('minXp')">🚪 Мин.XP</button>
+                <button class="owner-btn" onclick="editClan('name')">✏️ Изм. Имя</button>
+                <button class="owner-btn" onclick="editClan('tag')">🏷️ Изм. Тег</button>
+                <button class="owner-btn" onclick="editClan('emoji')">🎨 Изм. Эмодзи</button>
+                <button class="owner-btn" onclick="editClan('notice')">📢 Изм. Инфо</button>
             </div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:20px;">
                 <h3>Участники</h3>
                 <div style="display:flex; align-items:center; gap:10px">
                     <span style="font-size:12px; opacity:0.6" id="ui-clan-members-count">0/5</span>
-                    <button class="shop-btn" style="padding:4px 8px; font-size:12px" onclick="loadClanMembers(true)">🔄</button>
+                    <button class="shop-btn" style="padding:4px 8px; font-size:12px" onclick="loadClanMembers(true)">🔄 Обновить</button>
                 </div>
             </div>
             
@@ -260,8 +261,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v3_8_settings'; 
-        const OLD_KEYS = ['taxi_v3_5_leader_fix', 'taxi_v3_4_complete'];
+        const SAVE_KEY = 'taxi_v4_1_kickfix'; 
+        const OLD_KEYS = ['taxi_v4_0_stable', 'taxi_v3_9_cloud', 'taxi_v3_8_sync_repair'];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -293,6 +294,7 @@
                     if(d) { state = {...state, ...JSON.parse(d)}; break; }
                 }
             }
+            if(state.selected === 99) state.selected = 0; // Clean old data
 
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
@@ -309,11 +311,42 @@
             updateUI();
             
             if(window.dbInstance) {
-                // Ensure user exists immediately
+                // Verify clan status first!
+                verifyClanStatus();
                 syncUser();
+                
                 if(state.clanId) { loadClanData(); loadClanMembers(); }
                 else loadClansLeaderboard();
             }
+        }
+        
+        // --- NEW: Verify if player was kicked ---
+        async function verifyClanStatus() {
+            try {
+                const { getDoc, doc } = window.dbMethods;
+                const snap = await getDoc(doc(window.dbInstance, "players", myId));
+                if(snap.exists()) {
+                    const d = snap.data();
+                    
+                    // If DB says null but local says I have clan -> I was kicked
+                    if(state.clanId && !d.clanId) {
+                        alert("Вы были исключены из клана!");
+                        state.clanId = null;
+                        state.clanTag = null;
+                        save();
+                        updateUI();
+                        loadClansLeaderboard();
+                    } 
+                    // Optional: If DB has clan but local is null -> Sync down
+                    else if(!state.clanId && d.clanId) {
+                        state.clanId = d.clanId;
+                        state.clanTag = d.clanTag;
+                        save();
+                        updateUI();
+                        loadClanData(); loadClanMembers();
+                    }
+                }
+            } catch(e) {}
         }
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
@@ -360,6 +393,7 @@
             let cw = document.getElementById('car-wrap');
             cw.style.transform="scale(0.95)"; setTimeout(()=>cw.style.transform="scale(1)", 80);
             tg.HapticFeedback.impactOccurred('light');
+
             if(e) {
                 let el = document.createElement('div'); el.className='pop-txt'; el.innerText="💨";
                 el.style.left=e.clientX+'px'; el.style.top=e.clientY+'px';
@@ -414,7 +448,7 @@
             try {
                 const { setDoc, doc } = window.dbMethods;
                 await setDoc(doc(window.dbInstance, "clans", clanId), {
-                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp, money: 0, notice: "Добро пожаловать!", color: "#0F172A", minXp: 0
+                    name, tag, emoji, owner: myId, members: [myId], xp: state.xp, money: 0, notice: "Добро пожаловать!"
                 });
                 state.clanId = clanId; state.clanTag = tag; state.clanEmoji = emoji;
                 save(); syncUser(); updateUI(); loadClanData(); loadClanMembers();
@@ -424,13 +458,12 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
+                // Check limits
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
                     const lvl = Math.floor((d.xp || 0) / 10000) + 1;
                     const limit = 5 + (lvl * 2);
-                    
-                    if(state.xp < (d.minXp || 0)) return alert(`Нужно ${d.minXp} XP для вступления!`);
                     if(d.members.length >= limit) return alert("Клан переполнен!");
                 }
 
@@ -455,8 +488,12 @@
             if(!confirm("Выгнать участника?")) return;
             try {
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
+                // Update Clan Doc
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(targetId) });
+                // Update Player Doc
                 await updateDoc(doc(window.dbInstance, "players", targetId), { clanId: null, clanTag: null });
+                
+                alert("Игрок исключен.");
                 loadClanMembers();
             } catch(e) { console.error(e); }
         }
@@ -475,23 +512,14 @@
         async function editClan(field) {
             if(currentClanOwner !== myId) return;
             let currentText = "";
-            let newVal = "";
-
             if(field === 'name') currentText = document.getElementById('ui-my-clan-name').innerText;
             if(field === 'tag') currentText = document.getElementById('ui-my-clan-tag').innerText;
-            
-            if (field === 'color') {
-                newVal = prompt("Введите цвет (Red, Blue, Green, #FF00FF):");
-            } else if (field === 'minXp') {
-                newVal = prompt("Минимальный XP для входа:", "0");
-            } else {
-                newVal = prompt(`Новое значение (${field}):`, currentText);
-            }
+            if(field === 'emoji') currentText = document.getElementById('ui-my-clan-icon').innerText;
+            if(field === 'notice') currentText = document.getElementById('ui-clan-notice-text').innerText;
 
+            let newVal = prompt(`Новое значение (${field}):`, currentText);
             if(newVal) {
                  if(field === 'tag') newVal = newVal.toUpperCase();
-                 if(field === 'minXp') newVal = parseInt(newVal) || 0;
-                 
                  const { doc, updateDoc, collection, query, where, getDocs } = window.dbMethods;
                  await updateDoc(doc(window.dbInstance, "clans", state.clanId), { [field]: newVal });
                  
@@ -523,15 +551,13 @@
                     const dd = d.data();
                     const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                     const max = 5 + (lvl * 2);
-                    const colorStyle = dd.color ? `color:${dd.color}` : "";
-                    
                     html += `
                     <div class="clan-rank-row">
                         <div class="rank-num">${r}.</div>
                         <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                         <div style="flex:1">
-                            <div style="font-weight:bold; font-size:14px; ${colorStyle}">[${dd.tag}] ${dd.name}</div>
-                            <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Мин.XP: ${dd.minXp||0}</div>
+                            <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
+                            <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
                         </div>
                         <div style="font-weight:bold; color:var(--accent)">${dd.xp} XP</div>
                         ${(!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px; font-size:11px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : ''}
@@ -561,9 +587,6 @@
                     document.getElementById('ui-my-clan-name').innerText = d.name;
                     document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
                     document.getElementById('ui-my-clan-xp').innerText = xp;
-                    
-                    if(d.color) document.getElementById('ui-my-clan-name').style.color = d.color;
-                    
                     document.getElementById('ui-clan-level').innerText = lvl;
                     document.getElementById('ui-clan-money').innerText = d.money || 0;
                     document.getElementById('ui-clan-next-xp').innerText = nextXp;
@@ -679,7 +702,6 @@
                     } else {
                         const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                         const max = 5 + (lvl * 2);
-                        const colorStyle = dd.color ? `color:${dd.color}` : "";
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
                         
                         html += `
@@ -687,8 +709,8 @@
                             <div class="rank-num">${r}.</div>
                             <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                             <div style="flex:1">
-                                <div style="font-weight:bold; font-size:14px; ${colorStyle}">[${dd.tag}] ${dd.name}</div>
-                                <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
+                                <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
+                                <div style="font-size:11px; opacity:0.6">${dd.members ? dd.members.length : 0} уч. | Ур. ${lvl}</div>
                             </div>
                             <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
                             ${btn}
