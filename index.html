@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 4.1</title>
+    <title>Taxi City Final</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СВОИ КЛЮЧИ НИЖЕ 🔴
+        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
- const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -30,7 +30,7 @@
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
-                window.dbMethods = { doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId };
+                window.dbMethods = { doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId, onSnapshot };
             }
         } catch (e) { console.error(e); }
     </script>
@@ -262,7 +262,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v4_1_stable'; 
+        const SAVE_KEY = 'taxi_v4_2_final'; 
         const OLD_KEYS = ['taxi_v4_0_bugfix', 'taxi_v3_9_cloud'];
 
         const carsDB = [
@@ -285,6 +285,7 @@
             clanId: null, clanTag: null, clanEmoji: null
         };
         let currentClanOwner = "";
+        let clanUnsubscribe = null;
 
         function init() {
             if(localStorage.getItem(SAVE_KEY)) {
@@ -312,42 +313,44 @@
             updateUI();
             
             if(window.dbInstance) {
-                // Verify clan status first!
-                verifyClanStatus();
-                syncUser();
-                
-                if(state.clanId) { loadClanData(); loadClanMembers(); }
-                else loadClansLeaderboard();
+                // FORCE CLOUD RESTORE
+                restoreFromCloud();
             }
         }
-        
-        // --- NEW: Verify if player was kicked ---
-        async function verifyClanStatus() {
+
+        async function restoreFromCloud() {
             try {
                 const { getDoc, doc } = window.dbMethods;
                 const snap = await getDoc(doc(window.dbInstance, "players", myId));
                 if(snap.exists()) {
                     const d = snap.data();
                     
-                    // If DB says null but local says I have clan -> I was kicked
-                    if(state.clanId && !d.clanId) {
-                        alert("Вы были исключены из клана!");
-                        state.clanId = null;
-                        state.clanTag = null;
-                        save();
-                        updateUI();
-                        loadClansLeaderboard();
-                    } 
-                    // Optional: If DB has clan but local is null -> Sync down
-                    else if(!state.clanId && d.clanId) {
+                    // Priority Sync: If Cloud has Clan but Local doesn't -> TAKE CLOUD
+                    if(d.clanId && d.clanId !== state.clanId) {
                         state.clanId = d.clanId;
                         state.clanTag = d.clanTag;
-                        save();
-                        updateUI();
-                        loadClanData(); loadClanMembers();
                     }
+                    // If Cloud has NO clan, but local DOES -> YOU WERE KICKED -> CLEAR LOCAL
+                    if(!d.clanId && state.clanId) {
+                        state.clanId = null; 
+                        state.clanTag = null;
+                        alert("Вы больше не состоите в клане.");
+                    }
+
+                    if(d.money > state.money) state.money = d.money;
+                    if(d.xp > state.xp) state.xp = d.xp;
+                    save(); updateUI();
                 }
-            } catch(e) {}
+                
+                syncUser();
+                
+                if(state.clanId) { 
+                    loadClanData(); 
+                    loadClanMembers(); 
+                } else {
+                    loadClansLeaderboard();
+                }
+            } catch(e) { console.error(e); }
         }
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
@@ -367,6 +370,8 @@
             
             const btn = document.getElementById('btn-act');
             btn.innerText = "🚖 ПОЕХАЛИ!"; btn.style.background = "#333";
+            btn.style.transform = "scale(0.95)";
+            setTimeout(() => btn.style.transform = "scale(1)", 150);
             
             loop = setInterval(() => {
                 speed *= 0.96; if(speed<0.1) speed=0;
@@ -459,7 +464,6 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
-                // Check limits
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
@@ -481,6 +485,7 @@
                 const { updateDoc, doc, arrayRemove } = window.dbMethods;
                 await updateDoc(doc(window.dbInstance, "clans", state.clanId), { members: arrayRemove(myId) });
                 state.clanId = null; state.clanTag = null;
+                if(clanUnsubscribe) clanUnsubscribe();
                 save(); syncUser(); updateUI(); loadClansLeaderboard();
             } catch(e) {}
         }
@@ -510,15 +515,13 @@
             if(currentClanOwner !== myId) return;
             let currentText = "";
             let newVal = prompt(`Новое значение (${field}):`);
-            
             if(newVal) {
                  if(field === 'tag') newVal = newVal.toUpperCase();
                  const { doc, updateDoc, collection, query, where, getDocs } = window.dbMethods;
                  await updateDoc(doc(window.dbInstance, "clans", state.clanId), { [field]: newVal });
                  
-                 // Sync tag to all members
                  if(field === 'tag') {
-                     alert("Обновляю тег у участников... Ждите.");
+                     alert("Обновляю тег у участников...");
                      const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
                      const snap = await getDocs(q);
                      snap.forEach(async (d) => {
@@ -545,7 +548,7 @@
                     const dd = d.data();
                     const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                     const max = 5 + (lvl * 2);
-                    const color = dd.color || '#0F172A'; // Apply Color
+                    const color = dd.color || '#0F172A';
                     html += `
                     <div class="clan-rank-row">
                         <div class="rank-num">${r}.</div>
@@ -562,13 +565,15 @@
             } catch(e) { list.innerHTML = "Ошибка"; }
         }
 
-        async function loadClanData() {
+        function loadClanData() {
             if(!window.dbInstance || !state.clanId) return;
-            try {
-                const { getDoc, doc } = window.dbMethods;
-                const snap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
-                if(snap.exists()) {
-                    const d = snap.data();
+            const { doc, onSnapshot } = window.dbMethods;
+            
+            if(clanUnsubscribe) clanUnsubscribe();
+            
+            clanUnsubscribe = onSnapshot(doc(window.dbInstance, "clans", state.clanId), (doc) => {
+                if(doc.exists()) {
+                    const d = doc.data();
                     currentClanOwner = d.owner;
                     
                     const xp = d.xp || 0;
@@ -580,14 +585,13 @@
 
                     document.getElementById('ui-my-clan-tag').innerText = d.tag;
                     document.getElementById('ui-my-clan-name').innerText = d.name;
-                    document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
-                    document.getElementById('ui-my-clan-xp').innerText = xp;
-                    
                     if(d.color) {
                          document.getElementById('ui-my-clan-name').style.color = d.color;
                          document.getElementById('ui-my-clan-tag').style.color = d.color;
                     }
 
+                    document.getElementById('ui-my-clan-icon').innerText = d.emoji || "🛡️";
+                    document.getElementById('ui-my-clan-xp').innerText = xp;
                     document.getElementById('ui-clan-level').innerText = lvl;
                     document.getElementById('ui-clan-money').innerText = d.money || 0;
                     document.getElementById('ui-clan-next-xp').innerText = nextXp;
@@ -607,11 +611,12 @@
                     }
 
                     if(state.clanTag!==d.tag){ state.clanTag=d.tag; save(); }
+                } else {
+                    state.clanId = null; save(); updateUI();
                 }
-            } catch(e) {}
+            });
         }
 
-        // --- NEW SAFE CLAN MEMBER LOADER (FIXED) ---
         async function loadClanMembers(anim=false) {
             if(!window.dbInstance || !state.clanId) return;
             const list = document.getElementById('clan-members-list');
@@ -620,33 +625,25 @@
             try {
                 const { getDoc, doc, where, query, collection, getDocs, documentId } = window.dbMethods;
                 
-                // 1. Get Clan members IDs
                 const cSnap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
                 if(!cSnap.exists()) return;
                 const memberIds = cSnap.data().members || [];
-
                 if(memberIds.length === 0) { list.innerHTML="Пусто"; return; }
 
                 let members = [];
-                // 2. SAFE LOADING (no index required)
-                // Split into chunks of 10 for 'in' query
                 const chunks = [];
-                for (let i = 0; i < memberIds.length; i += 10) chunks.push(memberIds.slice(i, i + 10));
+                for (let i=0; i<memberIds.length; i+=10) chunks.push(memberIds.slice(i, i+10));
 
                 for (const chunk of chunks) {
                     const q = query(collection(window.dbInstance, "players"), where(documentId(), "in", chunk));
                     const snap = await getDocs(q);
                     snap.forEach(d => { 
                         let p = d.data(); p.id = d.id;
-                        if(p.xp === undefined || p.xp === null) p.xp = 0;
+                        if(p.xp === undefined) p.xp = 0; 
                         members.push(p); 
                     });
                 }
-                
-                // Time calculations
-                const now = Date.now();
 
-                // Sort by XP
                 members.sort((a,b) => (b.xp||0) - (a.xp||0));
 
                 let html = "";
@@ -654,33 +651,10 @@
 
                 members.forEach((m, i) => {
                     let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
-                    
-                    let displayName = m.name;
-                    if(m.id === currentClanOwner) {
-                        displayName = `👑 ${m.name}`;
-                    }
-
-                    // Online Status Logic
-                    let lastActiveText = "Неизвестно";
-                    if(m.lastActive) {
-                        const diffMin = Math.floor((now - m.lastActive) / 60000);
-                        if(diffMin < 2) lastActiveText = `<span style="color:#10B981">● В сети</span>`;
-                        else if(diffMin < 60) lastActiveText = `${diffMin} мин. назад`;
-                        else if(diffMin < 1440) lastActiveText = `${Math.floor(diffMin/60)} ч. назад`;
-                        else lastActiveText = `${Math.floor(diffMin/1440)} дн. назад`;
-                    }
-                    
-                    // Highlight Self
-                    const isMe = m.id === myId;
-                    const style = isMe ? 'border: 1px solid var(--accent); background: #FFF7ED;' : '';
-
                     let kickBtn = (isOwner && m.id !== myId) ? `<button class="kick-btn" onclick="kickMember('${m.id}')">❌</button>` : "";
                     
-                    html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center; ${style}">
-                        <div style="flex:1">
-                            <span>${medal} ${displayName}</span><br>
-                            <span style="font-size:10px; color:#94A3B8">${lastActiveText}</span>
-                        </div>
+                    html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center">
+                        <div style="flex:1"><span>${medal} ${m.name}</span></div>
                         <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp || 0} XP</b>${kickBtn}</div>
                     </div>`;
                 });
@@ -695,7 +669,6 @@
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
-                // Force write XP as 0 if undefined
                 let xpToSend = state.xp;
                 if(xpToSend === undefined || xpToSend === null) xpToSend = 0;
                 
@@ -704,7 +677,7 @@
                     xp: xpToSend, 
                     clanId: state.clanId||null, 
                     clanTag: state.clanTag||null,
-                    lastActive: Date.now() // Save time for online status
+                    lastActive: Date.now() 
                 }, { merge: true });
             } catch(e){}
         }
@@ -736,6 +709,7 @@
                     } else {
                         const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                         const max = 5 + (lvl * 2);
+                        const color = dd.color || '#0F172A';
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
                         
                         html += `
@@ -743,7 +717,7 @@
                             <div class="rank-num">${r}.</div>
                             <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                             <div style="flex:1">
-                                <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
+                                <div style="font-weight:bold; font-size:14px; color:${color}">[${dd.tag}] ${dd.name}</div>
                                 <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
                             </div>
                             <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
@@ -760,11 +734,8 @@
         function updateUI() {
             document.getElementById('ui-money').innerText = Math.floor(state.money);
             document.getElementById('ui-fuel').innerText = state.fuel;
-            // FIX: Max fuel display update
             document.getElementById('ui-fuel-max').innerText = 10 + state.upgrades.tank;
-
-            if(!full) return; // Optimize passive loop
-
+            
             document.getElementById('ui-car').innerText = carsDB.find(x=>x.id===state.selected).emoji;
 
             const tagEl = document.getElementById('ui-clan-tag');
@@ -809,10 +780,13 @@
                 btn.disabled = false;
                 if(state.fuel > 0) { 
                     if(btn.innerText !== "🚖 ПОЕХАЛИ!") btn.innerText = "ВЗЯТЬ ЗАКАЗ";
-                    btn.style.background="var(--text-main)"; 
-                } else { 
-                    btn.innerText = "ЗАПРАВКА (10💰)"; btn.style.background="var(--accent)"; 
-                }
+                    btn.style.background="var(--text-main)"; btn.style.color="var(--card-bg)"; 
+                } 
+                else { btn.innerText = "ЗАПРАВКА (10💰)"; btn.style.background="var(--accent)"; btn.style.color="black"; }
+            } else if (isOverheated) {
+                const btn = document.getElementById('btn-act');
+                btn.disabled = true;
+                btn.innerText = "ПЕРЕГРЕВ!";
             }
         }
 
