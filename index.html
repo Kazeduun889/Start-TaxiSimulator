@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City Final</title>
+    <title>Taxi City 4.5 (Eternal)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <!-- FIREBASE -->
@@ -14,7 +14,7 @@
         // ==================================================================
         // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴
         // ==================================================================
-       const firebaseConfig = {
+     const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -78,7 +78,7 @@
         .overheated { animation: shake 0.5s; filter: grayscale(100%); }
 
         .controls { background:var(--card-bg); padding:20px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -5px 30px rgba(0,0,0,0.1); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; transition:0.1s; }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:18px; font-weight:800; cursor:pointer; }
         .btn-main:active { transform:scale(0.97); }
         .btn-main:disabled { opacity:0.5; }
 
@@ -117,6 +117,9 @@
         .edit-notice-btn { font-size: 16px; cursor: pointer; background:none; border:none; }
         .owner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px; }
         .owner-btn { background: #E0F2FE; color: #0284C7; border: none; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
+        
+        /* RESTORED STATUS */
+        .sync-status { position:absolute; top:5px; right:10px; font-size:10px; color:#aaa; z-index:200; }
     </style>
 </head>
 <body>
@@ -126,6 +129,7 @@
         <div class="pill">⛽ <span id="ui-fuel">10</span>/<span id="ui-fuel-max">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
+    <div id="sync-msg" class="sync-status">Syncing...</div>
 
     <!-- GAME -->
     <div id="tab-game" class="stage">
@@ -167,7 +171,6 @@
         <!-- Active Clan View -->
         <div id="clan-view-active" style="display:none">
             
-            <!-- NOTICE BOARD -->
             <div id="ui-clan-notice-box" class="clan-notice">
                 <div>📢 <span id="ui-clan-notice-text">Загрузка...</span></div>
                 <button id="btn-edit-notice" class="edit-notice-btn" style="display:none" onclick="editClan('notice')">✏️</button>
@@ -185,7 +188,6 @@
                 <h1 id="ui-my-clan-tag" style="color:var(--accent); margin:0; font-size:30px; margin-top:-10px">TAG</h1>
                 <h2 id="ui-my-clan-name" style="margin:5px 0 0 0">Название</h2>
                 
-                <!-- Level Progress -->
                 <div style="margin-top:15px; text-align:left">
                     <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px; opacity:0.8">
                         <span>XP: <span id="ui-my-clan-xp">0</span></span>
@@ -194,14 +196,12 @@
                     <div class="clan-lvl-bar"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
                 </div>
 
-                <!-- Treasury -->
                 <div class="treasury-box">
                     <div>🏦 Казна: <b style="color:#10B981; font-size:18px" id="ui-clan-money">0</b> 💰</div>
                     <button class="shop-btn" id="btn-donate-clan" style="background:#10B981; color:white" onclick="donateToClan()">Внести 1000</button>
                 </div>
             </div>
             
-            <!-- OWNER CONTROLS -->
             <div id="owner-panel" class="owner-grid" style="display:none">
                 <button class="owner-btn" onclick="editClan('name')">✏️ Изм. Имя</button>
                 <button class="owner-btn" onclick="editClan('tag')">🏷️ Изм. Тег</button>
@@ -262,8 +262,14 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const SAVE_KEY = 'taxi_v4_2_final'; 
-        const OLD_KEYS = ['taxi_v4_0_bugfix', 'taxi_v3_9_cloud'];
+        const SAVE_KEY = 'taxi_eternal_4_5'; 
+        // HUGE LIST OF OLD KEYS TO RECOVER DATA
+        const OLD_KEYS = [
+            'taxi_v4_2_final', 'taxi_v4_1_stable', 'taxi_v4_0_bugfix', 
+            'taxi_v3_9_cloud', 'taxi_v3_8_sync_repair', 'taxi_v3_6_final',
+            'taxi_v3_5_leader_fix', 'taxi_v3_4_complete', 'taxi_v3_2_stable',
+            'taxi_v2_9_final', 'taxi_v2_8_full', 'taxi_v2_6_final'
+        ];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -288,15 +294,26 @@
         let clanUnsubscribe = null;
 
         function init() {
+            // 1. Try Current Save
             if(localStorage.getItem(SAVE_KEY)) {
                 state = { ...state, ...JSON.parse(localStorage.getItem(SAVE_KEY)) };
             } else {
+                // 2. Try Restore from ANY old key
                 for(let k of OLD_KEYS) {
                     let d = localStorage.getItem(k);
-                    if(d) { state = {...state, ...JSON.parse(d)}; break; }
+                    if(d) { 
+                        let old = JSON.parse(d);
+                        // Pick max values to avoid loss
+                        state.money = Math.max(state.money, old.money||0);
+                        state.xp = Math.max(state.xp, old.xp||0);
+                        if(old.owned && old.owned.length > state.owned.length) state.owned = old.owned;
+                        break; 
+                    }
                 }
             }
-            if(state.selected === 99) state.selected = 0; // Clean old data
+
+            // Cleanup
+            if(state.selected === 99) state.selected = 0;
 
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
@@ -313,36 +330,40 @@
             updateUI();
             
             if(window.dbInstance) {
-                // FORCE CLOUD RESTORE
+                // FORCE RESTORE FROM CLOUD (Crucial Fix)
                 restoreFromCloud();
             }
         }
 
         async function restoreFromCloud() {
+            document.getElementById('sync-msg').innerText = "Syncing...";
             try {
                 const { getDoc, doc } = window.dbMethods;
                 const snap = await getDoc(doc(window.dbInstance, "players", myId));
+                
                 if(snap.exists()) {
                     const d = snap.data();
                     
-                    // Priority Sync: If Cloud has Clan but Local doesn't -> TAKE CLOUD
-                    if(d.clanId && d.clanId !== state.clanId) {
+                    // Priority: Cloud Clan State overrides Local
+                    if(d.clanId) {
                         state.clanId = d.clanId;
                         state.clanTag = d.clanTag;
-                    }
-                    // If Cloud has NO clan, but local DOES -> YOU WERE KICKED -> CLEAR LOCAL
-                    if(!d.clanId && state.clanId) {
-                        state.clanId = null; 
-                        state.clanTag = null;
-                        alert("Вы больше не состоите в клане.");
+                    } else {
+                         // If cloud says no clan, but local says yes -> User was kicked
+                         if(state.clanId) {
+                             state.clanId = null;
+                             state.clanTag = null;
+                         }
                     }
 
+                    // Priority: Max Money/XP
                     if(d.money > state.money) state.money = d.money;
                     if(d.xp > state.xp) state.xp = d.xp;
+
                     save(); updateUI();
                 }
                 
-                syncUser();
+                syncUser(); // Push merged state back
                 
                 if(state.clanId) { 
                     loadClanData(); 
@@ -350,6 +371,8 @@
                 } else {
                     loadClansLeaderboard();
                 }
+                document.getElementById('sync-msg').innerText = "Ready";
+
             } catch(e) { console.error(e); }
         }
 
@@ -464,6 +487,7 @@
         async function joinClan(id, tag, emoji) {
             try {
                 const { doc, getDoc, updateDoc, arrayUnion } = window.dbMethods;
+                // Check limits
                 const snap = await getDoc(doc(window.dbInstance, "clans", id));
                 if(snap.exists()) {
                     const d = snap.data();
@@ -515,13 +539,14 @@
             if(currentClanOwner !== myId) return;
             let currentText = "";
             let newVal = prompt(`Новое значение (${field}):`);
+            
             if(newVal) {
                  if(field === 'tag') newVal = newVal.toUpperCase();
                  const { doc, updateDoc, collection, query, where, getDocs } = window.dbMethods;
                  await updateDoc(doc(window.dbInstance, "clans", state.clanId), { [field]: newVal });
                  
                  if(field === 'tag') {
-                     alert("Обновляю тег у участников...");
+                     alert("Обновляю тег у участников... Ждите.");
                      const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
                      const snap = await getDocs(q);
                      snap.forEach(async (d) => {
@@ -612,6 +637,7 @@
 
                     if(state.clanTag!==d.tag){ state.clanTag=d.tag; save(); }
                 } else {
+                    // Clan deleted?
                     state.clanId = null; save(); updateUI();
                 }
             });
@@ -625,12 +651,15 @@
             try {
                 const { getDoc, doc, where, query, collection, getDocs, documentId } = window.dbMethods;
                 
+                // 1. Get Clan members IDs
                 const cSnap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
                 if(!cSnap.exists()) return;
                 const memberIds = cSnap.data().members || [];
+
                 if(memberIds.length === 0) { list.innerHTML="Пусто"; return; }
 
                 let members = [];
+                // Chunk fetching to avoid index requirement
                 const chunks = [];
                 for (let i=0; i<memberIds.length; i+=10) chunks.push(memberIds.slice(i, i+10));
 
@@ -651,10 +680,13 @@
 
                 members.forEach((m, i) => {
                     let medal = i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
+                    let displayName = m.name;
+                    if(m.id === currentClanOwner) displayName = `👑 ${m.name}`;
+
                     let kickBtn = (isOwner && m.id !== myId) ? `<button class="kick-btn" onclick="kickMember('${m.id}')">❌</button>` : "";
                     
                     html += `<div class="list-card" style="padding:10px; margin-bottom:5px; display:flex; align-items:center">
-                        <div style="flex:1"><span>${medal} ${m.name}</span></div>
+                        <div style="flex:1"><span>${medal} ${displayName}</span></div>
                         <div style="display:flex; align-items:center"><b style="color:var(--accent)">${m.xp || 0} XP</b>${kickBtn}</div>
                     </div>`;
                 });
@@ -669,6 +701,7 @@
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
+                // Force write XP as 0 if undefined
                 let xpToSend = state.xp;
                 if(xpToSend === undefined || xpToSend === null) xpToSend = 0;
                 
@@ -709,7 +742,6 @@
                     } else {
                         const lvl = Math.floor((dd.xp || 0) / 10000) + 1;
                         const max = 5 + (lvl * 2);
-                        const color = dd.color || '#0F172A';
                         let btn = (!state.clanId) ? `<button class="shop-btn" style="padding:4px 8px;font-size:10px" onclick="joinClan('${d.id}','${dd.tag}','${dd.emoji}')">Войти</button>` : '';
                         
                         html += `
@@ -717,7 +749,7 @@
                             <div class="rank-num">${r}.</div>
                             <div class="clan-emoji-circle">${dd.emoji||'🛡️'}</div>
                             <div style="flex:1">
-                                <div style="font-weight:bold; font-size:14px; color:${color}">[${dd.tag}] ${dd.name}</div>
+                                <div style="font-weight:bold; font-size:14px">[${dd.tag}] ${dd.name}</div>
                                 <div style="font-size:11px; opacity:0.6">${dd.members.length} / ${max} уч. | Ур. ${lvl}</div>
                             </div>
                             <div style="font-weight:bold; color:var(--accent); margin-right:5px">${dd.xp} XP</div>
@@ -734,9 +766,8 @@
         function updateUI() {
             document.getElementById('ui-money').innerText = Math.floor(state.money);
             document.getElementById('ui-fuel').innerText = state.fuel;
+            // FIX: Max fuel display update
             document.getElementById('ui-fuel-max').innerText = 10 + state.upgrades.tank;
-            
-            document.getElementById('ui-car').innerText = carsDB.find(x=>x.id===state.selected).emoji;
 
             const tagEl = document.getElementById('ui-clan-tag');
             if(state.clanTag) { tagEl.style.display='block'; tagEl.innerText = "CLAN: [" + state.clanTag + "]"; } 
@@ -816,6 +847,12 @@
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
+
+        // NEW: Status dot to check sync
+        setInterval(() => {
+            const dot = document.getElementById('sync-status-dot');
+            if(dot) dot.style.background = window.dbInstance ? '#10B981' : '#EF4444';
+        }, 5000);
 
         init();
     </script>
