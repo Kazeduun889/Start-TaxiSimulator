@@ -2,19 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taxi City 5.0 (Ultimate)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Taxi City 5.0 ULTIMATE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- FIREBASE -->
+    <!-- FIREBASE LIBRARY -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ==================================================================
-        // 🔴 ВСТАВЬ СЮДА СВОИ КЛЮЧИ 🔴
+        // 🔴🔴🔴 1. ВСТАВЬ СЮДА СВОИ КЛЮЧИ FIREBASE 🔴🔴🔴
         // ==================================================================
-    const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyDLCvMTF21It50FRcYNDzvGuRXlKsaaPAE",
   authDomain: "talinoos.firebaseapp.com",
   projectId: "talinoos",
@@ -26,13 +26,14 @@
 
         try {
             if (firebaseConfig.apiKey.includes("ВСТАВЬ")) {
-                console.error("Ключи не вставлены!");
+                alert("КРИТИЧЕСКАЯ ОШИБКА: Ключи Firebase не вставлены!");
             } else {
                 const app = initializeApp(firebaseConfig);
                 window.dbInstance = getFirestore(app);
                 window.dbMethods = { doc, setDoc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, getDocs, collection, query, orderBy, limit, where, documentId, onSnapshot };
+                console.log("Firebase Connected");
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("FB Error", e); }
     </script>
 
     <style>
@@ -42,87 +43,99 @@
             --accent: #F59E0B;
             --card-bg: #FFFFFF;
             --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            --danger: #EF4444;
+            --success: #10B981;
         }
-
         body.night-mode {
             --bg-grad: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
             --text-main: #F1F5F9;
             --card-bg: #1E293B;
-            --road: #020617;
-            --city-b: #334155;
         }
-
         body {
             background: var(--bg-grad); color: var(--text-main); font-family: var(--font);
             margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column;
             overflow: hidden; user-select: none; transition: background 0.5s;
         }
 
-        /* UI */
+        /* --- UI COMPONENTS --- */
         .hud-bar { position: absolute; top:0; left:0; right:0; padding:15px; z-index:50; display:flex; justify-content:space-between; pointer-events:none; }
-        .pill { background: rgba(255,255,255,0.3); backdrop-filter:blur(10px); padding:8px 14px; border-radius:20px; font-weight:800; font-size:14px; border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; gap:5px; pointer-events:auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .pill { background: rgba(255,255,255,0.3); backdrop-filter:blur(12px); padding:8px 14px; border-radius:20px; font-weight:800; font-size:14px; border:1px solid rgba(255,255,255,0.3); pointer-events:auto; display:flex; align-items:center; gap:6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
         .stage { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
         .city-layer { position:absolute; bottom:0; left:0; right:0; pointer-events:none; }
-        .city-back { height:35%; background: linear-gradient(to top, #94A3B8 0%, transparent 100%); opacity:0.6; }
+        .city-back { height:40%; background: linear-gradient(to top, #94A3B8 0%, transparent 100%); opacity:0.5; }
         .road { position:absolute; bottom:0; width:100%; height:100px; background:#334155; border-top:5px solid #F59E0B; z-index:5; }
-        .road-marks { position:absolute; top:50%; width:100%; height:4px; background:repeating-linear-gradient(90deg, #fff 0 40px, transparent 0 80px); opacity:0.4; }
+        .road-marks { position:absolute; top:50%; width:100%; height:4px; background:repeating-linear-gradient(90deg, #fff 0 40px, transparent 0 80px); opacity:0.5; }
 
         .info-panel { position:absolute; top:90px; width:100%; text-align:center; z-index:10; pointer-events:none; }
-        .speed-val { font-size:60px; font-weight:900; text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .progress-track { width:240px; height:12px; background:rgba(128,128,128,0.3); margin:10px auto; border-radius:6px; overflow:hidden; }
+        .speed-val { font-size:64px; font-weight:900; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .progress-track { width:240px; height:12px; background:rgba(0,0,0,0.1); margin:10px auto; border-radius:6px; overflow:hidden; border:1px solid rgba(255,255,255,0.3); }
         .progress-fill { height:100%; width:0%; background:var(--accent); transition: width 0.1s linear; }
 
-        .car-wrap { position:relative; z-index:20; align-self:center; margin-bottom:40px; transition:transform 0.1s; cursor:pointer; width: 200px; height: 120px; display: flex; align-items: center; justify-content: center; }
-        .car-emoji { font-size:130px; filter:drop-shadow(0 20px 30px rgba(0,0,0,0.4)); pointer-events:none; }
+        .car-wrap { position:relative; z-index:20; align-self:center; margin-bottom:40px; transition:transform 0.1s; cursor:pointer; padding:20px; margin-top:-20px; }
+        .car-emoji { font-size:140px; filter:drop-shadow(0 25px 30px rgba(0,0,0,0.3)); pointer-events:none; }
 
-        .controls { background:var(--card-bg); padding:20px; padding-bottom:30px; z-index:100; border-radius:24px 24px 0 0; box-shadow:0 -10px 40px rgba(0,0,0,0.15); }
-        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:20px; font-weight:800; cursor:pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        .overheated { animation: shake 0.5s; filter: grayscale(100%); }
+
+        .controls { background:var(--card-bg); padding:20px; padding-bottom:30px; z-index:30; border-radius:24px 24px 0 0; box-shadow:0 -10px 40px rgba(0,0,0,0.1); }
+        .btn-main { width:100%; padding:18px; border:none; border-radius:16px; background:var(--text-main); color:var(--card-bg); font-size:20px; font-weight:800; cursor:pointer; transition:0.1s; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
         .btn-main:active { transform:scale(0.96); }
         .btn-main:disabled { opacity:0.6; cursor:not-allowed; }
 
+        /* TABS */
         .tab-screen { display:none; position:absolute; top:0; left:0; right:0; bottom:80px; background:var(--bg-grad); z-index:60; padding:20px; overflow-y:auto; }
         .tab-screen.active { display:block; }
-        .header-title { font-size:30px; font-weight:900; margin-bottom:20px; }
+        .header-title { font-size:32px; font-weight:900; margin-bottom:20px; letter-spacing: -1px; }
         
-        .list-card { background:var(--card-bg); padding:15px; border-radius:16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
-        .shop-btn { background:rgba(128,128,128,0.1); border:none; padding:10px 16px; border-radius:10px; font-weight:700; color:var(--text-main); cursor:pointer; }
+        .list-card { background:var(--card-bg); padding:16px; border-radius:18px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 10px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); }
+        .shop-btn { background:rgba(0,0,0,0.05); border:none; padding:10px 16px; border-radius:12px; font-weight:700; color:var(--text-main); cursor: pointer; }
         .shop-btn.active { background:var(--accent); color:black; }
+        .shop-btn:disabled { opacity: 0.5; }
         
-        .clan-input { width:100%; padding:14px; border-radius:12px; border:1px solid #ccc; margin-bottom:10px; font-size:16px; }
+        .clan-input { width:100%; padding:14px; border-radius:14px; border:1px solid rgba(0,0,0,0.1); margin-bottom:10px; box-sizing:border-box; font-size:16px; background: rgba(255,255,255,0.8); }
         
-        .nav { position:absolute; bottom:0; left:0; right:0; background:var(--card-bg); border-top:1px solid rgba(128,128,128,0.1); padding:10px 0; padding-bottom:env(safe-area-inset-bottom); display:flex; justify-content:space-around; z-index:150; }
-        .nav-item { display:flex; flex-direction:column; align-items:center; width:60px; color:#94A3B8; font-size:10px; font-weight:700; gap:4px; cursor:pointer; }
-        .nav-item.active { color:var(--accent); }
-        .nav-item svg { width:26px; height:26px; fill:currentColor; }
-
-        .theme-toggle { position:absolute; top:60px; right:15px; width:35px; height:35px; background:rgba(0,0,0,0.3); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:50; }
-        
-        /* FIX: Clan Colors in Top */
-        .clan-rank-row { padding:12px; background:var(--card-bg); margin-bottom:8px; border-radius:14px; display:flex; align-items:center; gap:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .clan-emoji-circle { width:40px; height:40px; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; }
-        
-        /* New Owner Panel */
-        .owner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .owner-btn { background: #E0F2FE; color: #0284C7; border: none; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 13px; cursor: pointer; }
-
-        /* Effects */
-        .pop-txt { position:absolute; font-weight:900; font-size:28px; color:var(--text-main); pointer-events:none; animation:flyUp 0.6s forwards; z-index:200; }
+        .theme-toggle { position:absolute; top:60px; right:15px; width:40px; height:40px; background:rgba(0,0,0,0.2); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:50; backdrop-filter: blur(5px); }
+        .pop-txt { position:absolute; font-weight:900; font-size:28px; color:var(--text-main); pointer-events:none; animation:flyUp 0.6s forwards; z-index:100; }
         @keyframes flyUp { 100% { opacity:0; transform:translateY(-80px) scale(1.5); } }
-        
-        /* Leaderboard Switcher */
+
         .switch-box { display: flex; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 14px; margin-bottom: 20px; }
         .switch-btn { flex: 1; border: none; background: transparent; padding: 12px; border-radius: 10px; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; }
         .switch-btn.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .nav { background:var(--card-bg); border-top:1px solid rgba(128,128,128,0.1); padding:10px 0; padding-bottom:env(safe-area-inset-bottom); display:flex; justify-content:space-around; z-index:100; position:absolute; bottom:0; left:0; right:0; }
+        .nav-item { display:flex; flex-direction:column; align-items:center; width:60px; color:#94A3B8; font-size:10px; font-weight:700; gap:4px; }
+        .nav-item.active { color:var(--accent); }
+        .nav-item svg { width:26px; height:26px; fill:currentColor; }
+        
+        /* Clan Advanced */
+        .clan-rank-row { padding:14px; background:var(--card-bg); margin-bottom:8px; border-radius:14px; display:flex; align-items:center; gap:12px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .rank-num { font-weight:900; width:25px; color:var(--text-sec); font-size: 16px; text-align: center; }
+        .clan-emoji-circle { width:40px; height:40px; background:rgba(0,0,0,0.05); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; }
+        .kick-btn { background: #fee2e2; color: #ef4444; border:none; padding: 6px 12px; border-radius: 8px; font-weight:bold; font-size: 11px; margin-left: auto; cursor: pointer; }
+        
+        .clan-lvl-bar { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+        .clan-lvl-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+        .treasury-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 16px; margin-top: 15px; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center; }
+        
+        .clan-notice { background: #FEF3C7; color: #92400E; padding: 14px; border-radius: 14px; margin-bottom: 20px; font-size: 14px; border: 1px solid #FCD34D; display: flex; justify-content: space-between; align-items: center; }
+        .edit-notice-btn { font-size: 18px; cursor: pointer; background:none; border:none; }
+        
+        .owner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .owner-btn { background: #E0F2FE; color: #0284C7; border: none; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 13px; cursor: pointer; }
+
+        /* Sync Status */
+        #sync-msg { position: absolute; top: 70px; left: 20px; font-size: 10px; opacity: 0.5; color: var(--text-main); pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div class="hud-bar">
-        <div class="pill">💰 <span id="ui-money">0</span></div>
+        <div class="pill">💰 <span id="ui-money">0</span> <span id="ui-income" style="font-size:11px;color:var(--success);margin-left:4px"></span></div>
         <div class="pill">⛽ <span id="ui-fuel">10</span>/<span id="ui-fuel-max">10</span></div>
     </div>
     <div class="theme-toggle" onclick="toggleTheme()">🌗</div>
+    <div id="sync-msg">Sync...</div>
 
     <!-- GAME -->
     <div id="tab-game" class="stage">
@@ -131,8 +144,9 @@
         
         <div class="info-panel">
             <div class="speed-val"><span id="ui-speed">0</span></div>
+            <div id="overheat-msg" style="color:var(--danger); font-weight:900; display:none; animation:shake 0.5s">🔥 ПЕРЕГРЕВ!</div>
             <div class="progress-track"><div class="progress-fill" id="ui-prog"></div></div>
-            <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:18px;"></div>
+            <div id="ui-clan-tag" style="display:none; color:var(--accent); font-weight:900; margin-top:8px; font-size:18px; text-shadow:0 2px 4px rgba(0,0,0,0.2)"></div>
         </div>
 
         <div class="car-wrap" id="car-wrap" onclick="tap(event)">
@@ -145,27 +159,35 @@
     <div id="tab-clans" class="tab-screen">
         <div class="header-title">Мой Клан 🛡️</div>
 
+        <!-- No Clan View -->
         <div id="clan-view-none">
             <div class="list-card" style="display:block; text-align:center;">
                 <h3>Создать Империю</h3>
-                <p style="font-size:13px; opacity:0.7; margin-bottom:15px">Цена: 10,000💰</p>
+                <p style="font-size:13px;opacity:0.7;margin-bottom:15px">Стоимость: 10,000💰</p>
                 <div style="display:flex; gap:8px; margin-bottom:10px">
-                    <input type="text" id="inp-clan-emoji" class="clan-input" placeholder="😎" style="width:70px; text-align:center" maxlength="2">
-                    <input type="text" id="inp-clan-name" class="clan-input" placeholder="Название">
+                    <input type="text" id="inp-clan-emoji" class="clan-input" placeholder="😎" style="width:60px; text-align:center" maxlength="2">
+                    <input type="text" id="inp-clan-name" class="clan-input" placeholder="Название (3-12)">
                 </div>
-                <input type="text" id="inp-clan-tag" class="clan-input" placeholder="ТЕГ (3-4 букв)" style="text-transform:uppercase" maxlength="4">
-                <button class="btn-main" style="margin-top:10px" onclick="createClan()">СОЗДАТЬ</button>
+                <input type="text" id="inp-clan-tag" class="clan-input" placeholder="ТЕГ (3-4 БУКВЫ)" style="text-transform:uppercase" maxlength="4">
+                <button class="btn-main" onclick="createClan()">СОЗДАТЬ</button>
             </div>
-            <p style="text-align:center; margin-top:20px; opacity:0.6; font-size:12px">Вступить в клан можно во вкладке <b>Топ -> Кланы</b></p>
+            <p style="text-align:center; margin-top:30px; opacity:0.6; font-size:13px">Вступить в клан: Вкладка "Топ" -> "Кланы"</p>
         </div>
 
+        <!-- Active Clan View -->
         <div id="clan-view-active" style="display:none">
-            <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:20px; text-align:center; margin-bottom:20px;">
+            
+            <div id="ui-clan-notice-box" class="clan-notice">
+                <div>📢 <span id="ui-clan-notice-text">Загрузка...</span></div>
+                <button id="btn-edit-notice" class="edit-notice-btn" style="display:none" onclick="editClan('notice')">✏️</button>
+            </div>
+
+            <div style="background:var(--text-main); color:var(--card-bg); padding:20px; border-radius:20px; text-align:center; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.15)">
                 <div style="display:flex; justify-content:space-between; align-items:start">
-                    <div id="ui-my-clan-icon" style="font-size:45px;">🛡️</div>
+                    <div id="ui-my-clan-icon" style="font-size:45px; background:rgba(255,255,255,0.1); width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center">🛡️</div>
                     <div style="text-align:right">
-                        <div style="font-size:11px; opacity:0.7">УРОВЕНЬ</div>
-                        <div style="font-size:32px; font-weight:900; color:var(--accent)" id="ui-clan-level">1</div>
+                        <div style="font-size:11px; opacity:0.7; letter-spacing:1px">УРОВЕНЬ</div>
+                        <div style="font-size:32px; font-weight:900; color:var(--accent); line-height:1" id="ui-clan-level">1</div>
                     </div>
                 </div>
                 
@@ -174,25 +196,23 @@
                     <span id="ui-my-clan-name" style="font-size:24px; font-weight:800; margin-left:5px">Название</span>
                 </div>
                 
+                <!-- Level -->
                 <div style="margin-top:20px; text-align:left">
                     <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; opacity:0.8">
                         <span>XP: <span id="ui-my-clan-xp">0</span></span>
                         <span>Цель: <span id="ui-clan-next-xp">10000</span></span>
                     </div>
-                    <div style="width:100%; height:6px; background:rgba(0,0,0,0.1); border-radius:3px; overflow:hidden">
-                        <div style="height:100%; background:#10B981; width:0%" id="ui-clan-xp-bar"></div>
-                    </div>
+                    <div class="clan-lvl-bar"><div class="clan-lvl-fill" id="ui-clan-xp-bar"></div></div>
                 </div>
 
-                <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:16px; margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="text-align:left">
-                        <div style="font-size:11px; opacity:0.7">КАЗНА</div>
-                        <b style="color:#10B981; font-size:20px" id="ui-clan-money">0</b> 💰
-                    </div>
-                    <button class="shop-btn" style="background:#10B981; color:white" onclick="donateToClan()">+1000</button>
+                <!-- Treasury -->
+                <div class="treasury-box">
+                    <div>🏦 Казна: <b style="color:var(--success); font-size:18px" id="ui-clan-money">0</b> 💰</div>
+                    <button class="shop-btn" id="btn-donate-clan" style="background:var(--success); color:white" onclick="donateToClan()">Внести 1000</button>
                 </div>
             </div>
-
+            
+            <!-- Owner Controls -->
             <div id="owner-panel" class="owner-grid" style="display:none">
                 <button class="owner-btn" onclick="editClan('name')">✏️ Имя</button>
                 <button class="owner-btn" onclick="editClan('tag')">🏷️ Тег</button>
@@ -200,27 +220,34 @@
                 <button class="owner-btn" onclick="editClan('color')">🌈 Цвет</button>
             </div>
 
-            <h3 style="margin-top:25px; margin-bottom:10px">Участники <span style="font-size:12px;opacity:0.5" id="ui-clan-members-count"></span></h3>
-            <div id="clan-members-list"></div>
-            <button class="btn-main" style="background:var(--danger); margin-top:30px; font-size:14px; padding:12px" onclick="leaveClan()">ПОКИНУТЬ</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:25px;">
+                <h3 style="margin:0">Участники</h3>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <span style="font-size:12px; opacity:0.6; font-weight:bold" id="ui-clan-members-count">0/5</span>
+                    <button class="shop-btn" style="padding:6px 10px; font-size:14px" onclick="loadClanMembers(true)">🔄</button>
+                </div>
+            </div>
+            
+            <div id="clan-members-list" style="opacity:0.9">Загрузка...</div>
+            <button class="btn-main" style="background:var(--danger); color:white; margin-top:30px; font-size:14px; padding:12px" onclick="leaveClan()">ПОКИНУТЬ КЛАН</button>
         </div>
     </div>
 
     <!-- BUSINESS -->
     <div id="tab-business" class="tab-screen">
         <div class="header-title">Таксопарк 💼</div>
-        <div class="list-card"><div>👦 <b>Новичок</b> (+1$/с)</div><button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button></div>
-        <div class="list-card"><div>👨‍✈️ <b>Профи</b> (+5$/с)</div><button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button></div>
-        <div class="list-card"><div>🤖 <b>Автопилот</b> (+20$/с)</div><button class="shop-btn" id="btn-hire-expert" onclick="hire('expert')">15000💰</button></div>
+        <div class="list-card"><div style="font-size:32px; margin-right:15px">👦</div><div style="flex:1"><b>Новичок</b><br><span style="font-size:13px;opacity:0.7">+1$/сек</span></div><button class="shop-btn" id="btn-hire-novice" onclick="hire('novice')">1000💰</button></div>
+        <div class="list-card"><div style="font-size:32px; margin-right:15px">👨‍✈️</div><div style="flex:1"><b>Профи</b><br><span style="font-size:13px;opacity:0.7">+5$/сек</span></div><button class="shop-btn" id="btn-hire-pro" onclick="hire('pro')">4000💰</button></div>
+        <div class="list-card"><div style="font-size:32px; margin-right:15px">🤖</div><div style="flex:1"><b>Автопилот</b><br><span style="font-size:13px;opacity:0.7">+20$/сек</span></div><button class="shop-btn" id="btn-hire-expert" onclick="hire('expert')">15000💰</button></div>
     </div>
 
     <!-- SHOP -->
     <div id="tab-shop" class="tab-screen">
         <div class="header-title">Гараж</div>
         <div id="shop-cars"></div>
-        <h3 style="margin-top:20px">Тюнинг</h3>
-        <div class="list-card"><div><b>Бензобак+</b></div><button class="shop-btn" id="btn-upg-tank" onclick="upgrade('tank')">500💰</button></div>
-        <div class="list-card"><div><b>Турбо Клик</b></div><button class="shop-btn" id="btn-upg-click" onclick="upgrade('click')">1000💰</button></div>
+        <h3 style="margin:30px 0 15px">Тюнинг</h3>
+        <div class="list-card"><div><b>Бензобак+</b><br><span style="font-size:12px;opacity:0.7">+1 Литр</span></div><button class="shop-btn" id="btn-upg-tank" onclick="upgrade('tank')">500💰</button></div>
+        <div class="list-card"><div><b>Турбо Клик</b><br><span style="font-size:12px;opacity:0.7">+10% скорость</span></div><button class="shop-btn" id="btn-upg-click" onclick="upgrade('click')">1000💰</button></div>
     </div>
 
     <!-- LEADERBOARD -->
@@ -246,9 +273,16 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // 🟢 FINAL SAVE KEY 🟢
         const SAVE_KEY = 'taxi_v5_0_ultimate'; 
-        // HUGE LIST TO FIND ANY OLD DATA
-        const OLD_KEYS = ['taxi_v4_2_final', 'taxi_v4_1_stable', 'taxi_v4_0_bugfix', 'taxi_v3_9_cloud', 'taxi_v3_6_final'];
+        // 🔥 LIST OF ALL PREVIOUS KEYS TO RECOVER DATA 🔥
+        const OLD_KEYS = [
+            'taxi_v4_2_realtime', 'taxi_v4_1_stable', 'taxi_v4_0_bugfix', 
+            'taxi_v3_9_cloud', 'taxi_v3_8_sync_repair', 'taxi_v3_6_final',
+            'taxi_v3_5_leader_fix', 'taxi_v3_4_complete', 'taxi_v3_2_stable',
+            'taxi_v2_9_final', 'taxi_v2_8_full', 'taxi_v2_6_final', 
+            'taxi_v2_5_safe', 'taxi_v2_2_donate', 'taxi_v2_0_lead'
+        ];
 
         const carsDB = [
             { id: 0, name: "Start", emoji: "🚙", price: 0, reward: 20, power: 1.0 },
@@ -273,38 +307,52 @@
         let clanUnsubscribe = null;
 
         function init() {
-            // 1. Restore from Local
+            // 1. Try to load CURRENT version
             if(localStorage.getItem(SAVE_KEY)) {
                 state = { ...state, ...JSON.parse(localStorage.getItem(SAVE_KEY)) };
             } else {
+                // 2. MIGRATION: Scan ALL old keys and pick the best one
+                console.log("Migrating data...");
                 for(let k of OLD_KEYS) {
                     let d = localStorage.getItem(k);
-                    if(d) { state = {...state, ...JSON.parse(d)}; break; }
+                    if(d) { 
+                        let old = JSON.parse(d);
+                        // Merge strategies: Keep highest money/xp
+                        state.money = Math.max(state.money, old.money || 0);
+                        state.xp = Math.max(state.xp, old.xp || 0);
+                        if(old.owned && old.owned.length > state.owned.length) state.owned = old.owned;
+                        if(old.upgrades) state.upgrades = old.upgrades;
+                        if(old.staff) state.staff = old.staff;
+                        // Don't restore clan from local, let Cloud Sync decide!
+                    }
                 }
             }
+            if(state.selected===99) state.selected=0; // Remove Tesla if bugged
 
-            // 2. Start Loops
+            // Loops
             setInterval(() => {
                 let inc = (state.staff.novice*1) + (state.staff.pro*5) + (state.staff.expert*20);
-                if(inc>0){ state.money+=inc; updateUI(false); }
+                if(inc>0){ state.money+=inc; updateUI(); }
             }, 1000);
 
             setInterval(() => {
                 let max = 10+state.upgrades.tank;
                 if(state.fuel<max && Date.now()-state.lastRefill>60000) {
-                    state.fuel++; state.lastRefill=Date.now(); save(); updateUI(false);
+                    state.fuel++; state.lastRefill=Date.now(); save(); updateUI();
                 }
             }, 1000);
 
             updateUI();
             
-            // 3. Cloud Sync & Restoration
+            // 3. CLOUD SYNC (Crucial)
             if(window.dbInstance) {
+                // Restore from Cloud -> Local
                 restoreFromCloud();
             }
         }
 
         async function restoreFromCloud() {
+            document.getElementById('sync-msg').innerText = "Syncing...";
             try {
                 const { getDoc, doc } = window.dbMethods;
                 const snap = await getDoc(doc(window.dbInstance, "players", myId));
@@ -312,34 +360,39 @@
                 if(snap.exists()) {
                     const d = snap.data();
                     
-                    // FORCE CLAN SYNC FROM DB
+                    // 1. Fix Clan Mismatches
+                    // Cloud has clan, Local doesn't -> Force Local to Cloud
                     if(d.clanId && d.clanId !== state.clanId) {
                         state.clanId = d.clanId;
                         state.clanTag = d.clanTag;
                     }
+                    // Cloud has NO clan, Local HAS clan -> Force Local to Null (Kicked)
                     if(!d.clanId && state.clanId) {
-                         // Kicked?
-                         state.clanId = null; 
-                         state.clanTag = null;
+                        state.clanId = null; 
+                        state.clanTag = null;
+                        console.log("You were kicked, clearing local clan.");
                     }
 
-                    // Keep highest values
+                    // 2. Restore Money/XP if Cloud is richer
                     if(d.money > state.money) state.money = d.money;
                     if(d.xp > state.xp) state.xp = d.xp;
                     
                     save(); updateUI();
                 }
                 
+                // 3. Push corrected state back to ensure sync
                 syncUser();
                 
+                // 4. Load Interface
                 if(state.clanId) { 
                     loadClanData(); 
                     loadClanMembers(); 
                 } else {
                     loadClansLeaderboard();
                 }
+                document.getElementById('sync-msg').innerText = "";
 
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Sync Error", e); }
         }
 
         function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
@@ -460,12 +513,17 @@
                     const limit = 5 + (lvl * 2);
                     if(d.members.length >= limit) return alert("Клан переполнен!");
                 }
-
+                
                 await updateDoc(doc(window.dbInstance, "clans", id), { members: arrayUnion(myId) });
                 state.clanId = id; state.clanTag = tag; state.clanEmoji = emoji;
                 
                 await syncUser();
                 save(); updateUI(); loadClanData(); loadClanMembers();
+                
+                // Switch view immediately
+                document.getElementById('clan-view-none').style.display='none';
+                document.getElementById('clan-view-active').style.display='block';
+                
             } catch(e) { alert("Ошибка вступления"); }
         }
 
@@ -510,7 +568,6 @@
                  const { doc, updateDoc, collection, query, where, getDocs } = window.dbMethods;
                  await updateDoc(doc(window.dbInstance, "clans", state.clanId), { [field]: newVal });
                  
-                 // Sync tag to all members
                  if(field === 'tag') {
                      alert("Обновляю тег у участников... Ждите.");
                      const q = query(collection(window.dbInstance, "players"), where("clanId", "==", state.clanId));
@@ -521,6 +578,7 @@
                      state.clanTag = newVal; 
                      save();
                  }
+                 loadClanData();
             }
         }
 
@@ -615,15 +673,12 @@
             
             try {
                 const { getDoc, doc, where, query, collection, getDocs, documentId } = window.dbMethods;
-                
                 const cSnap = await getDoc(doc(window.dbInstance, "clans", state.clanId));
                 if(!cSnap.exists()) return;
                 const memberIds = cSnap.data().members || [];
-
                 if(memberIds.length === 0) { list.innerHTML="Пусто"; return; }
 
                 let members = [];
-                // CHUNK FETCH (Safe way)
                 const chunks = [];
                 for (let i=0; i<memberIds.length; i+=10) chunks.push(memberIds.slice(i, i+10));
 
@@ -665,6 +720,7 @@
             if(!window.dbInstance) return;
             try {
                 const { setDoc, doc } = window.dbMethods;
+                // Force write XP as 0 if undefined
                 let xpToSend = state.xp;
                 if(xpToSend === undefined || xpToSend === null) xpToSend = 0;
                 
@@ -727,14 +783,11 @@
         }
 
         // --- UI ---
-        function updateUI(full=true) {
+        function updateUI() {
             document.getElementById('ui-money').innerText = Math.floor(state.money);
             document.getElementById('ui-fuel').innerText = state.fuel;
+            // FIX: Max fuel display update
             document.getElementById('ui-fuel-max').innerText = 10 + state.upgrades.tank;
-
-            if(!full) return;
-
-            document.getElementById('ui-car').innerText = carsDB.find(x=>x.id===state.selected).emoji;
 
             const tagEl = document.getElementById('ui-clan-tag');
             if(state.clanTag) { tagEl.style.display='block'; tagEl.innerText = "CLAN: [" + state.clanTag + "]"; } 
@@ -814,6 +867,15 @@
             if(id==='lead') loadLeaderboard();
             el.classList.add('active');
         };
+
+        // NEW: Status dot to check sync
+        setInterval(() => {
+            const dot = document.getElementById('sync-msg');
+            if(dot) {
+               if(window.dbInstance) dot.innerText = "";
+               else dot.innerText = "Нет сети";
+            }
+        }, 5000);
 
         init();
     </script>
